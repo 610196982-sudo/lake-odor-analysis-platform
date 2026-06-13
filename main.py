@@ -236,13 +236,9 @@ def apply_custom_css() -> None:
             cursor: default;
         }
         .func-card:hover {
-            border-color: #3498db;
-            box-shadow: 0 4px 20px rgba(52, 152, 219, 0.15);
-            transform: translateY(-2px);
-        }
-        .func-card .func-icon {
-            font-size: 2.2rem;
-            margin-bottom: 12px;
+            border-color: #adb5bd;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            transform: translateY(-1px);
         }
         .func-card .func-name {
             font-size: 1.0rem;
@@ -490,24 +486,20 @@ def render_home_page() -> None:
 
     modules = [
         {
-            "icon": "&#128202;",
             "name": "数据导入与清洗",
-            "desc": "多格式自动识别<br>异常值检测 · 缺失填补<br>列名智能映射",
+            "desc": "多格式自动识别 · 异常值检测<br>缺失填补 · 列名智能映射",
         },
         {
-            "icon": "&#128200;",
             "name": "时空特征可视化",
-            "desc": "时间序列 · 箱线对比<br>相关热力图 · 散点拟合<br>多面板联动分析",
+            "desc": "时间序列 · 箱线对比<br>热力图 · 散点拟合 · 多面板联动",
         },
         {
-            "icon": "&#9881;",
             "name": "驱动因子分析",
-            "desc": "Pearson / Spearman 相关<br>多元线性回归建模<br>随机森林重要性排序",
+            "desc": "Pearson / Spearman 相关<br>多元线性回归 · 随机森林排序",
         },
         {
-            "icon": "&#9888;",
             "name": "风险预警评估",
-            "desc": "理化指标实时输入<br>嗅味浓度预测<br>四级风险定级 · 处理建议",
+            "desc": "理化指标实时输入<br>嗅味浓度预测 · 四级定级 · 处理建议",
         },
     ]
 
@@ -516,7 +508,6 @@ def render_home_page() -> None:
         with col:
             st.markdown(
                 f'<div class="func-card">'
-                f'<div class="func-icon">{mod["icon"]}</div>'
                 f'<div class="func-name">{mod["name"]}</div>'
                 f'<div class="func-desc">{mod["desc"]}</div>'
                 f'</div>',
