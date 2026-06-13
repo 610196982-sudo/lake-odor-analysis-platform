@@ -329,31 +329,32 @@ def apply_custom_css() -> None:
             margin: 6px 12px;
         }
 
-        /* 导航 radio → 卡片式菜单 */
-        [data-testid="stSidebar"] [data-testid="stRadio"] > div {
-            gap: 3px;
+        /* 导航按钮 */
+        .nav-btn {
+            margin: 2px 0;
         }
-        [data-testid="stSidebar"] [data-testid="stRadio"] label {
-            display: block;
-            width: 100%;
-            padding: 10px 14px;
-            border-radius: 8px;
-            transition: all 0.15s ease;
-            cursor: pointer;
-            font-size: 0.9rem;
-            color: #4a5568;
-            margin: 1px 0;
-            box-sizing: border-box;
+        .nav-btn button {
+            width: 100% !important;
+            text-align: left !important;
+            justify-content: flex-start !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            border: none !important;
+            background: transparent !important;
+            color: #4a5568 !important;
+            font-size: 0.9rem !important;
+            font-weight: 400 !important;
+            transition: all 0.15s ease !important;
         }
-        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-            background-color: #f0f4ff;
-            color: #3498db;
+        .nav-btn button:hover {
+            background-color: #f0f4ff !important;
+            color: #3498db !important;
         }
-        [data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
-            background-color: #eef5ff;
-            color: #2980b9;
-            font-weight: 600;
-            box-shadow: inset 3px 0 0 #3498db;
+        .nav-btn.active button {
+            background-color: #eef5ff !important;
+            color: #2980b9 !important;
+            font-weight: 600 !important;
+            box-shadow: inset 3px 0 0 #3498db !important;
         }
 
         .sidebar-footer {
@@ -1523,19 +1524,30 @@ def main() -> None:
         )
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
-        # 导航菜单
-        page = st.radio(
-            "导航",
-            options=[
-                "系统首页",
-                "数据导入与清洗",
-                "时空特征可视化",
-                "驱动因子分析",
-                "风险预警评估",
-            ],
-            index=0,
-            label_visibility="collapsed",
-        )
+        # 导航菜单 — 用按钮保证宽度一致
+        nav_options = [
+            "系统首页",
+            "数据导入与清洗",
+            "时空特征可视化",
+            "驱动因子分析",
+            "风险预警评估",
+        ]
+        if "nav_index" not in st.session_state:
+            st.session_state["nav_index"] = 0
+
+        for i, label in enumerate(nav_options):
+            active = st.session_state["nav_index"] == i
+            cls = "nav-btn active" if active else "nav-btn"
+            st.markdown(
+                f'<div class="{cls}">',
+                unsafe_allow_html=True,
+            )
+            if st.button(label, key=f"nav_{i}", use_container_width=True):
+                st.session_state["nav_index"] = i
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        page = nav_options[st.session_state["nav_index"]]
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
