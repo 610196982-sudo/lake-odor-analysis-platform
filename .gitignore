@@ -1,0 +1,6 @@
+__pycache__/
+.claude/
+data/
+*.csv
+# model.ini
+# model.py
