@@ -329,28 +329,33 @@ def apply_custom_css() -> None:
             margin: 6px 12px;
         }
 
-        /* 导航按钮 */
-        .nav-btn {
-            margin: 2px 0;
+        /* 导航 radio — 全宽一致卡片式 */
+        section[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+            flex-direction: column !important;
+            gap: 3px !important;
         }
-        .nav-btn button {
+        section[data-testid="stSidebar"] [data-testid="stRadio"] > div > div {
             width: 100% !important;
-            text-align: left !important;
-            justify-content: flex-start !important;
+            flex: 1 !important;
+        }
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label {
+            display: flex !important;
+            width: 100% !important;
             padding: 10px 14px !important;
             border-radius: 8px !important;
-            border: none !important;
-            background: transparent !important;
-            color: #4a5568 !important;
             font-size: 0.9rem !important;
-            font-weight: 400 !important;
+            color: #4a5568 !important;
+            cursor: pointer !important;
             transition: all 0.15s ease !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
         }
-        .nav-btn button:hover {
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
             background-color: #f0f4ff !important;
             color: #3498db !important;
         }
-        .nav-btn.active button {
+        section[data-testid="stSidebar"] [data-testid="stRadio"] input[type="radio"]:checked + *,
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
             background-color: #eef5ff !important;
             color: #2980b9 !important;
             font-weight: 600 !important;
@@ -1524,30 +1529,19 @@ def main() -> None:
         )
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
-        # 导航菜单 — 用按钮保证宽度一致
-        nav_options = [
-            "系统首页",
-            "数据导入与清洗",
-            "时空特征可视化",
-            "驱动因子分析",
-            "风险预警评估",
-        ]
-        if "nav_index" not in st.session_state:
-            st.session_state["nav_index"] = 0
-
-        for i, label in enumerate(nav_options):
-            active = st.session_state["nav_index"] == i
-            cls = "nav-btn active" if active else "nav-btn"
-            st.markdown(
-                f'<div class="{cls}">',
-                unsafe_allow_html=True,
-            )
-            if st.button(label, key=f"nav_{i}", use_container_width=True):
-                st.session_state["nav_index"] = i
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        page = nav_options[st.session_state["nav_index"]]
+        # 导航菜单
+        page = st.radio(
+            "导航",
+            options=[
+                "系统首页",
+                "数据导入与清洗",
+                "时空特征可视化",
+                "驱动因子分析",
+                "风险预警评估",
+            ],
+            index=0,
+            label_visibility="collapsed",
+        )
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
