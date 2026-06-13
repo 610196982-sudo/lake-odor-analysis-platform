@@ -155,8 +155,8 @@ def apply_custom_css() -> None:
         .module-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #000;
-            border-left: 3px solid #000;
+            color: #1a1a2e;
+            border-left: 3px solid #1a5276;
             padding-left: 14px;
             margin: 28px 0 14px 0;
         }
@@ -236,8 +236,8 @@ def apply_custom_css() -> None:
             cursor: default;
         }
         .func-card:hover {
-            border-color: #000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-color: #2980b9;
+            box-shadow: 0 4px 20px rgba(41, 128, 185, 0.12);
             transform: translateY(-2px);
         }
         .func-card .func-icon {
@@ -268,7 +268,7 @@ def apply_custom_css() -> None:
             height: 36px;
             line-height: 36px;
             border-radius: 50%;
-            background: #000;
+            background: #1a5276;
             color: #fff;
             font-weight: 700;
             font-size: 1.0rem;
@@ -289,6 +289,31 @@ def apply_custom_css() -> None:
             margin-top: 50px;
             font-size: 0.78rem;
             letter-spacing: 1px;
+        }
+
+        /* Streamlit 默认红色 → 深蓝 */
+        :root {
+            --primary-color: #1a5276;
+        }
+        .stButton > button {
+            background-color: #1a5276 !important;
+            border-color: #1a5276 !important;
+            color: #fff !important;
+        }
+        .stTextInput > div > div > input:focus,
+        .stSelectbox > div > div > div:focus {
+            border-color: #1a5276 !important;
+            box-shadow: 0 0 0 1px #1a5276 !important;
+        }
+        input[type="checkbox"]:checked,
+        input[type="radio"]:checked {
+            accent-color: #1a5276;
+        }
+        .stSlider > div > div > div > div {
+            background-color: #1a5276 !important;
+        }
+        .stProgress > div > div > div {
+            background-color: #1a5276 !important;
         }
         </style>
         """,
