@@ -577,8 +577,7 @@ def render_home_page() -> None:
     # --- 页脚 ---
     st.markdown(
         '<div class="footer">'
-        'Lake Water Quality & Odor Analysis Platform  ·  Python + Streamlit  ·  '
-        '水文水资源工程'
+        'Lake Water Quality & Odor Analysis Platform  ·  Python + Streamlit'
         '</div>',
         unsafe_allow_html=True,
     )
