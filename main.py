@@ -35,7 +35,7 @@ import os
 
 st.set_page_config(
     page_title="湖库水体嗅味污染多维分析平台 V1.0",
-    page_icon="🌊",
+    page_icon="🔬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -407,7 +407,7 @@ def render_home_page() -> None:
     """
     # --- Hero 区域 ---
     st.markdown(
-        '<div class="main-title">🏠 湖库水体嗅味污染多维分析平台</div>',
+        '<div class="main-title">湖库水体嗅味污染多维分析平台</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -585,7 +585,7 @@ def render_data_import_page() -> None:
     渲染数据导入与清洗页面。
     """
     st.markdown(
-        '<div class="main-title">📥 数据导入与清洗</div>',
+        '<div class="main-title">数据导入与清洗</div>',
         unsafe_allow_html=True,
     )
 
@@ -832,7 +832,7 @@ def render_visualization_page() -> None:
     渲染时空特征可视化页面。
     """
     st.markdown(
-        '<div class="main-title">📈 时空特征可视化</div>',
+        '<div class="main-title">时空特征可视化</div>',
         unsafe_allow_html=True,
     )
 
@@ -844,7 +844,7 @@ def render_visualization_page() -> None:
     if df is None:
         st.markdown(
             '<div class="warning-box">⚠️ <b>暂无可用数据。</b>'
-            '请先在「📥 数据导入与清洗」页面导入或生成数据。</div>',
+            '请先在「数据导入与清洗」页面导入或生成数据。</div>',
             unsafe_allow_html=True,
         )
         return
@@ -1005,7 +1005,7 @@ def render_analysis_page() -> None:
     渲染驱动因子分析页面。
     """
     st.markdown(
-        '<div class="main-title">🔬 驱动因子分析</div>',
+        '<div class="main-title">驱动因子分析</div>',
         unsafe_allow_html=True,
     )
 
@@ -1016,7 +1016,7 @@ def render_analysis_page() -> None:
     if df is None:
         st.markdown(
             '<div class="warning-box">⚠️ <b>暂无可用数据。</b>'
-            '请先在「📥 数据导入与清洗」页面导入或生成数据。</div>',
+            '请先在「数据导入与清洗」页面导入或生成数据。</div>',
             unsafe_allow_html=True,
         )
         return
@@ -1025,15 +1025,15 @@ def render_analysis_page() -> None:
     analysis_type = st.selectbox(
         "请选择分析类型：",
         options=[
-            "📊 皮尔逊相关性分析",
-            "📈 多元线性回归建模",
-            "🌲 随机森林特征重要性排序",
-            "📉 交叉验证模型评估",
-            "📋 方差分析（ANOVA）",
+            "皮尔逊相关性分析",
+            "多元线性回归建模",
+            "随机森林特征重要性排序",
+            "交叉验证模型评估",
+            "方差分析（ANOVA）",
         ],
     )
 
-    if analysis_type == "📊 皮尔逊相关性分析":
+    if analysis_type == "皮尔逊相关性分析":
         st.markdown('<div class="module-title">皮尔逊相关性分析</div>', unsafe_allow_html=True)
 
         target = st.multiselect(
@@ -1080,7 +1080,7 @@ def render_analysis_page() -> None:
                     mime="text/csv",
                 )
 
-    elif analysis_type == "📈 多元线性回归建模":
+    elif analysis_type == "多元线性回归建模":
         st.markdown('<div class="module-title">多元线性回归建模</div>', unsafe_allow_html=True)
 
         target_options = ["GSM", "2-MIB"]
@@ -1128,7 +1128,7 @@ def render_analysis_page() -> None:
                     })
                 st.dataframe(pd.DataFrame(coef_data), use_container_width=True)
 
-    elif analysis_type == "🌲 随机森林特征重要性排序":
+    elif analysis_type == "随机森林特征重要性排序":
         st.markdown('<div class="module-title">随机森林特征重要性排序</div>', unsafe_allow_html=True)
 
         target_col = st.selectbox("选择目标变量", options=["GSM", "2-MIB"])
@@ -1173,7 +1173,7 @@ def render_analysis_page() -> None:
                 plt.tight_layout()
                 st.pyplot(fig)
 
-    elif analysis_type == "📉 交叉验证模型评估":
+    elif analysis_type == "交叉验证模型评估":
         st.markdown('<div class="module-title">交叉验证模型评估</div>', unsafe_allow_html=True)
 
         target_col = st.selectbox("选择目标变量", options=["GSM", "2-MIB"])
@@ -1205,7 +1205,7 @@ def render_analysis_page() -> None:
                 })
                 st.dataframe(fold_data, use_container_width=True)
 
-    elif analysis_type == "📋 方差分析（ANOVA）":
+    elif analysis_type == "方差分析（ANOVA）":
         st.markdown('<div class="module-title">方差分析（ANOVA）</div>', unsafe_allow_html=True)
 
         value_col = st.selectbox(
@@ -1256,7 +1256,7 @@ def render_risk_warning_page() -> None:
     渲染风险预警评估页面。
     """
     st.markdown(
-        '<div class="main-title">⚠️ 风险预警评估</div>',
+        '<div class="main-title">风险预警评估</div>',
         unsafe_allow_html=True,
     )
 
@@ -1511,7 +1511,7 @@ def main() -> None:
         st.markdown(
             """
             <div class="sidebar-brand">
-            <div class="sidebar-brand-icon">🌊</div>
+            <div class="sidebar-brand-icon"></div>
             <p class="sidebar-brand-title">嗅味污染分析平台</p>
             <p class="sidebar-brand-sub">Lake Odor Analysis Platform</p>
             </div>
@@ -1524,11 +1524,11 @@ def main() -> None:
         page = st.radio(
             "导航",
             options=[
-                "🏠  系统首页",
-                "📥  数据导入与清洗",
-                "📈  时空特征可视化",
-                "🔬  驱动因子分析",
-                "⚠️  风险预警评估",
+                "系统首页",
+                "数据导入与清洗",
+                "时空特征可视化",
+                "驱动因子分析",
+                "风险预警评估",
             ],
             index=0,
             label_visibility="collapsed",
@@ -1539,7 +1539,7 @@ def main() -> None:
         # 侧边栏底部信息
         st.markdown(
             '<p class="sidebar-footer">'
-            '© 2025 湖库水体嗅味污染<br>多维分析平台<br>'
+            '© 2026 湖库水体嗅味污染<br>多维分析平台<br>'
             '基于实测数据的溯源解析</p>',
             unsafe_allow_html=True,
         )
@@ -1554,15 +1554,15 @@ def main() -> None:
             )
 
     # --- 根据导航选择渲染对应页面 ---
-    if "系统首页" in page:
+    if page == "系统首页":
         render_home_page()
-    elif "数据导入与清洗" in page:
+    elif page == "数据导入与清洗":
         render_data_import_page()
-    elif "时空特征可视化" in page:
+    elif page == "时空特征可视化":
         render_visualization_page()
-    elif "驱动因子分析" in page:
+    elif page == "驱动因子分析":
         render_analysis_page()
-    elif "风险预警评估" in page:
+    elif page == "风险预警评估":
         render_risk_warning_page()
 
 
