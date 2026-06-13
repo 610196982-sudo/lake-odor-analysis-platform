@@ -291,6 +291,82 @@ def apply_custom_css() -> None:
             letter-spacing: 1px;
         }
 
+        /* ======== 侧边栏高级样式 ======== */
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+            border-right: 1px solid #edf0f5;
+        }
+        .sidebar-brand {
+            text-align: center;
+            padding: 20px 12px 14px 12px;
+        }
+        .sidebar-brand-icon {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+        }
+        .sidebar-brand-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin: 0;
+            letter-spacing: 1.5px;
+        }
+        .sidebar-brand-sub {
+            font-size: 0.68rem;
+            color: #aab;
+            margin: 4px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .sidebar-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #dee2e6, transparent);
+            margin: 6px 12px;
+        }
+
+        /* 导航 radio → 卡片式菜单 */
+        [data-testid="stSidebar"] [data-testid="stRadio"] > div {
+            gap: 3px;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label {
+            padding: 10px 14px;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin: 1px 0;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+            background-color: #f0f4ff;
+            color: #3498db;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
+            background-color: #eef5ff;
+            color: #2980b9;
+            font-weight: 600;
+            box-shadow: inset 3px 0 0 #3498db;
+        }
+
+        .sidebar-footer {
+            font-size: 0.7rem;
+            color: #b0b8c1;
+            text-align: center;
+            line-height: 1.6;
+        }
+        .sidebar-status {
+            background: #f0f7f9;
+            border-left: 3px solid #3498db;
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-top: 10px;
+        }
+        .sidebar-status p {
+            font-size: 0.72rem;
+            color: #2471a3;
+            margin: 0;
+        }
+
         /* Streamlit 默认红色 → 亮蓝 */
         :root {
             --primary-color: #3498db;
@@ -331,7 +407,7 @@ def render_home_page() -> None:
     """
     # --- Hero 区域 ---
     st.markdown(
-        '<div class="main-title">湖库水体嗅味污染多维分析平台</div>',
+        '<div class="main-title">🏠 湖库水体嗅味污染多维分析平台</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -1180,7 +1256,7 @@ def render_risk_warning_page() -> None:
     渲染风险预警评估页面。
     """
     st.markdown(
-        '<div class="main-title">风险预警评估</div>',
+        '<div class="main-title">⚠️ 风险预警评估</div>',
         unsafe_allow_html=True,
     )
 
@@ -1431,37 +1507,39 @@ def main() -> None:
 
     # --- 侧边栏导航 ---
     with st.sidebar:
+        # 品牌标识区
         st.markdown(
             """
-            <div style="text-align:center;padding:15px 0 10px 0;">
-            <p style="font-size:1.15rem;font-weight:600;color:#2c3e50;margin:0;letter-spacing:1px;">
-            嗅味污染分析平台</p>
-            <p style="font-size:0.78rem;color:#95a5a6;margin:5px 0;">版本 V1.0</p>
+            <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">🌊</div>
+            <p class="sidebar-brand-title">嗅味污染分析平台</p>
+            <p class="sidebar-brand-sub">Lake Odor Analysis Platform</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        st.markdown("---")
+        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
         # 导航菜单
         page = st.radio(
-            "系统功能导航",
+            "导航",
             options=[
-                "系统首页",
-                "数据导入与清洗",
-                "时空特征可视化",
-                "驱动因子分析",
-                "风险预警评估",
+                "🏠  系统首页",
+                "📥  数据导入与清洗",
+                "📈  时空特征可视化",
+                "🔬  驱动因子分析",
+                "⚠️  风险预警评估",
             ],
             index=0,
+            label_visibility="collapsed",
         )
 
-        st.markdown("---")
+        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
         # 侧边栏底部信息
         st.markdown(
-            '<p style="font-size:0.75rem;color:#95a5a6;text-align:center;">'
-            '© 2025 湖库水体嗅味污染<br>多维分析平台 V1.0<br>'
+            '<p class="sidebar-footer">'
+            '© 2025 湖库水体嗅味污染<br>多维分析平台<br>'
             '基于实测数据的溯源解析</p>',
             unsafe_allow_html=True,
         )
@@ -1469,24 +1547,22 @@ def main() -> None:
         # 显示当前数据状态
         if st.session_state["main_dataset"] is not None:
             st.markdown(
-                f'<div style="background-color:#e8f8f5;border-radius:5px;'
-                f'padding:10px;margin-top:10px;">'
-                f'<p style="font-size:0.75rem;color:#1e8449;margin:0;">'
-                f'✅ 数据已加载<br>'
+                f'<div class="sidebar-status">'
+                f'<p>✅ 数据已加载<br>'
                 f'{st.session_state["data_source"]}</p></div>',
                 unsafe_allow_html=True,
             )
 
     # --- 根据导航选择渲染对应页面 ---
-    if page == "系统首页":
+    if "系统首页" in page:
         render_home_page()
-    elif page == "数据导入与清洗":
+    elif "数据导入与清洗" in page:
         render_data_import_page()
-    elif page == "时空特征可视化":
+    elif "时空特征可视化" in page:
         render_visualization_page()
-    elif page == "驱动因子分析":
+    elif "驱动因子分析" in page:
         render_analysis_page()
-    elif page == "风险预警评估":
+    elif "风险预警评估" in page:
         render_risk_warning_page()
 
 
