@@ -211,6 +211,10 @@ def apply_custom_css() -> None:
             padding: 22px 18px;
             text-align: center;
             color: #000;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         .stat-card .stat-value {
             font-size: 2.2rem;
@@ -230,10 +234,15 @@ def apply_custom_css() -> None:
             background: #ffffff;
             border: 1px solid #e8ecf1;
             border-radius: 10px;
-            padding: 24px 18px;
+            padding: 24px 14px;
             text-align: center;
             transition: all 0.25s ease;
             cursor: default;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 120px;
+            height: 100%;
         }
         .func-card:hover {
             border-color: #adb5bd;
@@ -241,15 +250,15 @@ def apply_custom_css() -> None:
             transform: translateY(-1px);
         }
         .func-card .func-name {
-            font-size: 1.0rem;
+            font-size: 0.95rem;
             font-weight: 600;
             color: #1a1a2e;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .func-card .func-desc {
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             color: #868e96;
-            line-height: 1.7;
+            line-height: 1.6;
         }
 
         /* 工作流步骤 */
@@ -325,6 +334,8 @@ def apply_custom_css() -> None:
             gap: 3px;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label {
+            display: block;
+            width: 100%;
             padding: 10px 14px;
             border-radius: 8px;
             transition: all 0.15s ease;
@@ -332,6 +343,7 @@ def apply_custom_css() -> None:
             font-size: 0.9rem;
             color: #4a5568;
             margin: 1px 0;
+            box-sizing: border-box;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
             background-color: #f0f4ff;
