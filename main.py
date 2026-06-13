@@ -120,12 +120,12 @@ def init_session_state() -> None:
 
 def apply_custom_css() -> None:
     """
-    注入自定义 CSS 样式，采用简洁学术风格。
+    注入自定义 CSS 样式，采用现代科技风格。
     """
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
 
         html, body, [class*="css"] {
             font-family: 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
@@ -133,34 +133,42 @@ def apply_custom_css() -> None:
 
         /* 主标题 */
         .main-title {
-            font-size: 1.8rem;
+            font-size: 2.0rem;
             font-weight: 600;
-            color: #2c3e50;
+            color: #1a1a2e;
             text-align: center;
-            padding: 24px 0 12px 0;
-            border-bottom: 2px solid #bdc3c7;
-            margin-bottom: 24px;
+            padding: 30px 0 8px 0;
+            margin-bottom: 6px;
+            letter-spacing: 2px;
+        }
+
+        /* 副标题 */
+        .sub-title {
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin-bottom: 30px;
             letter-spacing: 1px;
         }
 
         /* 模块标题 */
         .module-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            color: #2c3e50;
-            border-left: 3px solid #5d6d7e;
+            color: #1a1a2e;
+            border-left: 3px solid #4a6cf7;
             padding-left: 14px;
             margin: 28px 0 14px 0;
         }
 
         /* 信息框 */
         .info-box {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background-color: #f8f9fc;
+            border: 1px solid #e8ecf1;
             padding: 16px 20px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 10px 0;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
             line-height: 1.8;
             color: #495057;
         }
@@ -170,7 +178,7 @@ def apply_custom_css() -> None:
             background-color: #f0f7f4;
             border: 1px solid #a3cfbb;
             padding: 14px 18px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 10px 0;
             color: #1e6e3e;
         }
@@ -180,7 +188,7 @@ def apply_custom_css() -> None:
             background-color: #fefaf0;
             border: 1px solid #f0c78e;
             padding: 14px 18px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 10px 0;
             color: #8a6d14;
         }
@@ -190,20 +198,99 @@ def apply_custom_css() -> None:
             background-color: #fdf5f5;
             border: 1px solid #e0a6a6;
             padding: 14px 18px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 10px 0;
             color: #a94442;
+        }
+
+        /* 数据统计数字卡片 */
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 10px;
+            padding: 22px 18px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .stat-card .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            background: linear-gradient(90deg, #4a6cf7, #6ee7b7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: #8892b0;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        /* 功能模块卡片 */
+        .func-card {
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
+            border-radius: 10px;
+            padding: 24px 18px;
+            text-align: center;
+            transition: all 0.25s ease;
+            cursor: default;
+        }
+        .func-card:hover {
+            border-color: #4a6cf7;
+            box-shadow: 0 4px 20px rgba(74, 108, 247, 0.10);
+            transform: translateY(-2px);
+        }
+        .func-card .func-icon {
+            font-size: 2.2rem;
+            margin-bottom: 12px;
+        }
+        .func-card .func-name {
+            font-size: 1.0rem;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        .func-card .func-desc {
+            font-size: 0.82rem;
+            color: #868e96;
+            line-height: 1.7;
+        }
+
+        /* 工作流步骤 */
+        .workflow-step {
+            display: inline-block;
+            text-align: center;
+            padding: 12px 20px;
+        }
+        .workflow-step .step-num {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4a6cf7, #3b5de7);
+            color: white;
+            font-weight: 700;
+            font-size: 1.0rem;
+            margin-bottom: 6px;
+        }
+        .workflow-step .step-text {
+            font-size: 0.8rem;
+            color: #495057;
+            font-weight: 500;
         }
 
         /* 页脚 */
         .footer {
             text-align: center;
-            color: #95a5a6;
-            padding: 24px 0;
-            border-top: 1px solid #dee2e6;
-            margin-top: 48px;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
+            color: #adb5bd;
+            padding: 28px 0;
+            border-top: 1px solid #e8ecf1;
+            margin-top: 50px;
+            font-size: 0.78rem;
+            letter-spacing: 1px;
         }
         </style>
         """,
@@ -217,163 +304,174 @@ def apply_custom_css() -> None:
 
 def render_home_page() -> None:
     """
-    渲染系统首页，展示项目背景、系统简介和使用说明。
+    渲染系统首页，科技感数据驾驶舱风格。
     """
+    # --- Hero 区域 ---
     st.markdown(
-        '<div class="main-title">长三角湖库水体理化特征与嗅味污染多维分析平台</div>',
+        '<div class="main-title">湖库水体嗅味污染多维分析平台</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<p style="text-align:center;color:#7f8c8d;font-size:1.1rem;">'
-        '版本 V1.0 | 长三角典型湖库嗅味污染多维溯源解析</p>',
+        '<p class="sub-title">'
+        '基于多源环境理化指标 · 驱动因子识别 · 风险智能预警</p>',
         unsafe_allow_html=True,
     )
 
-    # --- 项目背景 ---
-    st.markdown('<div class="module-title">一、项目背景</div>', unsafe_allow_html=True)
-    col1, col2 = st.columns([2, 1])
+    # --- 实时数据状态仪表盘 ---
+    st.markdown('<div class="module-title">数据概览</div>', unsafe_allow_html=True)
 
-    with col1:
-        st.markdown(
-            """
-            <div class="info-box">
-            <p style="margin:0;line-height:1.8;">
-            随着我国长三角地区经济快速发展和城市化进程加速，湖库水体富营养化问题日益突出。
-            藻类大量增殖不仅破坏水生态平衡，其代谢产物——<b>土臭素（GSM）</b>和
-            <b>2-甲基异莰醇（2-MIB）</b>——已成为影响饮用水口感和公众满意度的重要嗅味污染物。
-            </p>
-            <p style="margin:10px 0 0 0;line-height:1.8;">
-            本项目聚焦长三角五大典型湖库（<b>千岛湖、太湖、长荡湖、巢湖、淀山湖</b>），
-            系统收集并分析平水期、藻类生长期和爆发期的多维监测数据，旨在：
-            </p>
-            <ul style="margin:5px 0;line-height:1.8;">
-            <li>揭示嗅味物质（GSM / 2-MIB）的<strong>时空分布规律</strong>；</li>
-            <li>识别驱动嗅味污染的主要<strong>环境因子</strong>；</li>
-            <li>构建基于理化指标的<strong>嗅味风险预警模型</strong>。</li>
-            </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    df = st.session_state.get("main_dataset")
+    cleaned = st.session_state.get("cleaned_dataset")
+
+    if df is not None:
+        # 有数据时展示实时统计
+        sites = df["采样点位"].nunique() if "采样点位" in df.columns else len(df)
+        numeric_cols = df.select_dtypes(include=["float64", "int64"]).columns
+        param_count = len(numeric_cols)
+        has_odor = (
+            "GSM" in df.columns and not df["GSM"].isna().all()
+        ) or (
+            "2-MIB" in df.columns and not df["2-MIB"].isna().all()
         )
+        lake_list = df["湖泊名称"].unique().tolist() if "湖泊名称" in df.columns else ["—"]
 
-    with col2:
-        st.markdown(
-            """
-            <div style="background-color:#f7f9fc;border-radius:10px;padding:15px;
-            border:1px solid #d5dbdb;">
-            <p style="font-weight:bold;color:#1a5276;margin:0;">📊 监测指标一览</p>
-            <ul style="font-size:0.9rem;margin:5px 0;line-height:1.6;">
-            <li><b>物理指标：</b>水温、浊度</li>
-            <li><b>化学指标：</b>pH、DO、CODMn</li>
-            <li><b>营养盐：</b>TN、TP、NH₃-N</li>
-            <li><b>生物指标：</b>叶绿素a</li>
-            <li><b>嗅味物质：</b>GSM、2-MIB</li>
-            </ul>
-            <p style="font-weight:bold;color:#1a5276;margin:10px 0 0 0;">🗺️ 研究区域</p>
-            <ul style="font-size:0.9rem;margin:5px 0;line-height:1.6;">
-            <li>千岛湖（贫-中营养）</li>
-            <li>太湖（富营养）</li>
-            <li>长荡湖（中-富营养）</li>
-            <li>巢湖（富营养）</li>
-            <li>淀山湖（中营养）</li>
-            </ul>
-            </div>
-            """,
-            unsafe_allow_html=True,
+        s1, s2, s3, s4 = st.columns(4)
+        with s1:
+            st.markdown(
+                f'<div class="stat-card">'
+                f'<div class="stat-value">{len(df):,}</div>'
+                f'<div class="stat-label">监测记录</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s2:
+            st.markdown(
+                f'<div class="stat-card">'
+                f'<div class="stat-value">{sites}</div>'
+                f'<div class="stat-label">采样点位</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s3:
+            st.markdown(
+                f'<div class="stat-card">'
+                f'<div class="stat-value">{param_count}</div>'
+                f'<div class="stat-label">监测指标</div></div>',
+                unsafe_allow_html=True,
+            )
+        with s4:
+            odor_status = "已收录" if has_odor else "待补充"
+            st.markdown(
+                f'<div class="stat-card">'
+                f'<div class="stat-value" style="font-size:1.3rem;">{odor_status}</div>'
+                f'<div class="stat-label">嗅味物质 GSM / 2-MIB</div></div>',
+                unsafe_allow_html=True,
+            )
+
+        st.caption(
+            f"当前数据来源：{st.session_state.get('data_source', '—')}"
+            f"  |  研究水体：{'、'.join(lake_list)}"
         )
+    else:
+        # 无数据时展示占位
+        s1, s2, s3, s4 = st.columns(4)
+        for col, label in zip(
+            [s1, s2, s3, s4],
+            ["监测记录", "采样点位", "监测指标", "嗅味物质"]
+        ):
+            with col:
+                st.markdown(
+                    f'<div class="stat-card">'
+                    f'<div class="stat-value" style="font-size:1.2rem;opacity:0.5;">—</div>'
+                    f'<div class="stat-label">{label}</div></div>',
+                    unsafe_allow_html=True,
+                )
+        st.caption("尚未导入数据。请通过左侧导航进入「数据导入与清洗」上传您的监测数据。")
 
-    # --- 系统功能概览 ---
-    st.markdown('<div class="module-title">二、系统功能模块</div>', unsafe_allow_html=True)
+    # --- 功能模块 ---
+    st.markdown('<div class="module-title">核心功能</div>', unsafe_allow_html=True)
 
-    col_a, col_b, col_c, col_d = st.columns(4)
+    modules = [
+        {
+            "icon": "&#128202;",
+            "name": "数据导入与清洗",
+            "desc": "多格式自动识别<br>异常值检测 · 缺失填补<br>列名智能映射",
+        },
+        {
+            "icon": "&#128200;",
+            "name": "时空特征可视化",
+            "desc": "时间序列 · 箱线对比<br>相关热力图 · 散点拟合<br>多面板联动分析",
+        },
+        {
+            "icon": "&#9881;",
+            "name": "驱动因子分析",
+            "desc": "Pearson / Spearman 相关<br>多元线性回归建模<br>随机森林重要性排序",
+        },
+        {
+            "icon": "&#9888;",
+            "name": "风险预警评估",
+            "desc": "理化指标实时输入<br>嗅味浓度预测<br>四级风险定级 · 处理建议",
+        },
+    ]
 
-    with col_a:
-        st.markdown(
-            """
-            <div style="background-color:#f8f9fa; border:1px solid #dee2e6;
-            border-radius:4px; padding:20px 16px; text-align:center; height:170px;">
-            <p style="font-size:1.6rem; margin:0 0 8px 0; color:#5d6d7e;">数据导入与清洗</p>
-            <p style="font-size:0.85rem; color:#868e96; line-height:1.7;">
-            支持 CSV / Excel 格式<br>
-            异常值自动检测<br>
-            缺失值智能填补</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    cols = st.columns(4)
+    for col, mod in zip(cols, modules):
+        with col:
+            st.markdown(
+                f'<div class="func-card">'
+                f'<div class="func-icon">{mod["icon"]}</div>'
+                f'<div class="func-name">{mod["name"]}</div>'
+                f'<div class="func-desc">{mod["desc"]}</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
-    with col_b:
-        st.markdown(
-            """
-            <div style="background-color:#f8f9fa; border:1px solid #dee2e6;
-            border-radius:4px; padding:20px 16px; text-align:center; height:170px;">
-            <p style="font-size:1.6rem; margin:0 0 8px 0; color:#5d6d7e;">时空特征可视化</p>
-            <p style="font-size:0.85rem; color:#868e96; line-height:1.7;">
-            时间序列折线图<br>
-            分组箱线图对比<br>
-            多面板组合分析</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    # --- 分析工作流 ---
+    st.markdown('<div class="module-title">分析流程</div>', unsafe_allow_html=True)
 
-    with col_c:
-        st.markdown(
-            """
-            <div style="background-color:#f8f9fa; border:1px solid #dee2e6;
-            border-radius:4px; padding:20px 16px; text-align:center; height:170px;">
-            <p style="font-size:1.6rem; margin:0 0 8px 0; color:#5d6d7e;">驱动因子分析</p>
-            <p style="font-size:0.85rem; color:#868e96; line-height:1.7;">
-            相关性热力图<br>
-            多元线性回归<br>
-            特征重要性排序</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col_d:
-        st.markdown(
-            """
-            <div style="background-color:#f8f9fa; border:1px solid #dee2e6;
-            border-radius:4px; padding:20px 16px; text-align:center; height:170px;">
-            <p style="font-size:1.6rem; margin:0 0 8px 0; color:#5d6d7e;">风险预警评估</p>
-            <p style="font-size:0.85rem; color:#868e96; line-height:1.7;">
-            浓度实时预测<br>
-            四级风险定级<br>
-            处理措施建议</p>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # --- 使用说明 ---
-    st.markdown('<div class="module-title">三、快速使用指南</div>', unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="info-box">
-        <ol style="line-height:2.0;margin:0;">
-        <li><b>导入数据</b> — 通过左侧导航栏进入「📥 数据导入与清洗」，
-        上传您的监测数据文件（CSV/Excel）或使用系统内置的模拟数据进行体验。</li>
-        <li><b>数据清洗</b> — 系统将自动检测异常值和缺失值，
-        您可以选择剔除或填补策略。</li>
-        <li><b>时空分析</b> — 进入「📈 时空特征可视化」模块，
-        查看不同湖泊、不同水文期的指标变化规律。</li>
-        <li><b>因子分析</b> — 进入「🔬 驱动因子分析」模块，
-        生成相关性热力图，构建回归模型，识别关键环境驱动因子。</li>
-        <li><b>风险预警</b> — 进入「⚠️ 风险预警评估」模块，
-        输入实时理化参数，获取嗅味物质浓度预测和超标风险等级。</li>
-        </ol>
-        </div>
-        """,
-        unsafe_allow_html=True,
+    steps = ["数据导入", "清洗预处理", "特征可视化", "因子建模", "风险预警"]
+    workflow_html = (
+        '<div style="display:flex;justify-content:center;align-items:center;'
+        'flex-wrap:wrap;gap:10px;padding:20px 0;">'
     )
+    for i, step in enumerate(steps):
+        workflow_html += (
+            f'<div class="workflow-step">'
+            f'<div class="step-num">{i + 1}</div>'
+            f'<div class="step-text">{step}</div>'
+            f'</div>'
+        )
+        if i < len(steps) - 1:
+            workflow_html += (
+                '<div style="font-size:1.2rem;color:#c0c4cc;padding:0 4px;">→</div>'
+            )
+    workflow_html += '</div>'
+
+    st.markdown(workflow_html, unsafe_allow_html=True)
+
+    # --- 技术栈 ---
+    st.markdown('<div class="module-title">技术架构</div>', unsafe_allow_html=True)
+    t1, t2, t3, t4, t5 = st.columns(5)
+    tech_items = [
+        ("Python 3", "核心语言"),
+        ("Streamlit", "Web 交互框架"),
+        ("scikit-learn", "机器学习引擎"),
+        ("Matplotlib", "科学可视化"),
+        ("pandas / numpy", "数据处理层"),
+    ]
+    for col, (name, desc) in zip([t1, t2, t3, t4, t5], tech_items):
+        with col:
+            st.markdown(
+                f'<div style="text-align:center;padding:10px;">'
+                f'<p style="font-weight:600;color:#1a1a2e;margin:0;font-size:0.9rem;">{name}</p>'
+                f'<p style="color:#868e96;margin:4px 0 0 0;font-size:0.75rem;">{desc}</p>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
 
     # --- 页脚 ---
     st.markdown(
         '<div class="footer">'
-        '© 2025 《长三角湖库水体理化特征与嗅味污染多维分析平台 V1.0》 | '
-        'Python + Streamlit | 水文水资源工程'
+        'Lake Water Quality & Odor Analysis Platform  ·  Python + Streamlit  ·  '
+        '水文水资源工程'
         '</div>',
         unsafe_allow_html=True,
     )
