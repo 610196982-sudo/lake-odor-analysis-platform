@@ -359,7 +359,6 @@ def apply_custom_css() -> None:
             background-color: #eef5ff !important;
             color: #2980b9 !important;
             font-weight: 600 !important;
-            box-shadow: inset 3px 0 0 #3498db !important;
         }
 
         .sidebar-footer {
