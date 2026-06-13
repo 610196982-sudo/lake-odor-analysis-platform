@@ -155,8 +155,8 @@ def apply_custom_css() -> None:
         .module-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #1a1a2e;
-            border-left: 3px solid #4a6cf7;
+            color: #000;
+            border-left: 3px solid #000;
             padding-left: 14px;
             margin: 28px 0 14px 0;
         }
@@ -205,24 +205,22 @@ def apply_custom_css() -> None:
 
         /* 数据统计数字卡片 */
         .stat-card {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: #ffffff;
+            border: 1px solid #dee2e6;
             border-radius: 10px;
             padding: 22px 18px;
             text-align: center;
-            color: #ffffff;
+            color: #000;
         }
         .stat-card .stat-value {
             font-size: 2.2rem;
             font-weight: 700;
             letter-spacing: 1px;
-            background: linear-gradient(90deg, #4a6cf7, #6ee7b7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #000;
         }
         .stat-card .stat-label {
             font-size: 0.8rem;
-            color: #8892b0;
+            color: #6c757d;
             margin-top: 4px;
             letter-spacing: 1px;
         }
@@ -238,8 +236,8 @@ def apply_custom_css() -> None:
             cursor: default;
         }
         .func-card:hover {
-            border-color: #4a6cf7;
-            box-shadow: 0 4px 20px rgba(74, 108, 247, 0.10);
+            border-color: #000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             transform: translateY(-2px);
         }
         .func-card .func-icon {
@@ -270,8 +268,8 @@ def apply_custom_css() -> None:
             height: 36px;
             line-height: 36px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #4a6cf7, #3b5de7);
-            color: white;
+            background: #000;
+            color: #fff;
             font-weight: 700;
             font-size: 1.0rem;
             margin-bottom: 6px;
