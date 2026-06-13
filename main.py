@@ -613,7 +613,7 @@ def render_data_import_page() -> None:
         col1, col2 = st.columns(2)
         with col1:
             samples_count = st.slider(
-                "每个点位每个水文期的采样数量",
+                "模拟数据量（每点位/水文期）",
                 min_value=5,
                 max_value=50,
                 value=15,
