@@ -613,7 +613,7 @@ def render_data_import_page() -> None:
         col1, col2 = st.columns(2)
         with col1:
             samples_count = st.slider(
-                "模拟数据量（每点位/水文期）",
+                "模拟数据量（每点位/监测时段）",
                 min_value=5,
                 max_value=50,
                 value=15,
@@ -636,7 +636,7 @@ def render_data_import_page() -> None:
                 )
                 st.session_state["main_dataset"] = df
                 st.session_state["data_source"] = (
-                    f"内置模拟数据（{samples_count} 条/点位/水文期，种子={random_seed}）"
+                    f"内置模拟数据（{samples_count} 条/点位/监测时段，种子={random_seed}）"
                 )
 
             st.markdown(
@@ -717,7 +717,7 @@ def render_data_import_page() -> None:
                             val = "✅ 已识别" if not df[col].isna().all() else "⚠️ 已识别（数据为空）"
                             mapped_info.append({"标准字段": col, "状态": val})
                     for col in df.columns:
-                        if col not in expected + ["湖泊名称", "采样点位", "水文期", "采样日期", "经度", "纬度"]:
+                        if col not in expected + ["湖泊名称", "采样点位", "监测时段", "采样日期", "经度", "纬度"]:
                             mapped_info.append({"标准字段": col, "状态": "📎 保留原始列"})
                     st.dataframe(pd.DataFrame(mapped_info), use_container_width=True)
 
@@ -868,9 +868,9 @@ def render_visualization_page() -> None:
         )
     with col2:
         selected_periods = st.multiselect(
-            "选择水文期",
-            options=df["水文期"].unique().tolist() if "水文期" in df.columns else [],
-            default=df["水文期"].unique().tolist() if "水文期" in df.columns else [],
+            "选择监测时段",
+            options=df["监测时段"].unique().tolist() if "监测时段" in df.columns else [],
+            default=df["监测时段"].unique().tolist() if "监测时段" in df.columns else [],
         )
     with col3:
         all_numeric = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -891,8 +891,8 @@ def render_visualization_page() -> None:
     filtered_df = df.copy()
     if selected_lakes:
         filtered_df = filtered_df[filtered_df["湖泊名称"].isin(selected_lakes)]
-    if selected_periods and "水文期" in filtered_df.columns:
-        filtered_df = filtered_df[filtered_df["水文期"].isin(selected_periods)]
+    if selected_periods and "监测时段" in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df["监测时段"].isin(selected_periods)]
 
     if filtered_df.empty:
         st.warning("⚠️ 当前筛选条件下无数据，请调整筛选条件。")
@@ -930,12 +930,12 @@ def render_visualization_page() -> None:
     elif viz_type == "分组箱线图对比":
         x_choice = st.selectbox(
             "X 轴分组变量",
-            options=["水文期", "湖泊名称"],
+            options=["监测时段", "湖泊名称"],
         )
         hue_choice = st.selectbox(
             "嵌套分组（色调）",
-            options=["湖泊名称", "水文期"],
-            index=1 if x_choice == "水文期" else 0,
+            options=["湖泊名称", "监测时段"],
+            index=1 if x_choice == "监测时段" else 0,
         )
         fig = plot_boxplot_comparison(
             filtered_df,
@@ -964,7 +964,7 @@ def render_visualization_page() -> None:
         )
 
     elif viz_type == "多面板驱动因子分析":
-        exclude_from_predictors = {"GSM", "2-MIB", "湖泊名称", "采样点位", "水文期", "采样日期"}
+        exclude_from_predictors = {"GSM", "2-MIB", "湖泊名称", "采样点位", "监测时段", "采样日期"}
         predictor_candidates = [c for c in all_numeric if c not in exclude_from_predictors]
         fig = plot_multi_panel_dashboard(
             filtered_df,
@@ -974,10 +974,10 @@ def render_visualization_page() -> None:
         )
 
     elif viz_type == "柱状图对比":
-        x_choice = st.selectbox("X 轴变量", options=["湖泊名称", "水文期"])
+        x_choice = st.selectbox("X 轴变量", options=["湖泊名称", "监测时段"])
         hue_choice = st.selectbox(
             "嵌套分组",
-            options=["水文期", "湖泊名称"],
+            options=["监测时段", "湖泊名称"],
             index=1 if x_choice == "湖泊名称" else 0,
         )
         fig = plot_bar_comparison(
@@ -1221,7 +1221,7 @@ def render_analysis_page() -> None:
         )
         group_col = st.selectbox(
             "选择分组变量",
-            options=["水文期", "湖泊名称"],
+            options=["监测时段", "湖泊名称"],
         )
 
         if st.button("📋 执行方差分析", type="primary"):

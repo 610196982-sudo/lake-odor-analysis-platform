@@ -456,7 +456,7 @@ def fill_missing_values(
     - 'ffill'：用前一个有效值向前填充。
     - 'bfill'：用后一个有效值向后填充。
     - 'interpolate'：线性插值。
-    - 'group_mean'：按分组变量（如'水文期'）计算组内均值填补。
+    - 'group_mean'：按分组变量（如'监测时段'）计算组内均值填补。
 
     参数
     ----
@@ -589,14 +589,14 @@ def filter_by_period(
     periods: Union[str, List[str]]
 ) -> pd.DataFrame:
     """
-    按水文期筛选数据子集。
+    按监测时段筛选数据子集。
 
     参数
     ----
     df : pd.DataFrame
         完整数据集。
     periods : str or List[str]
-        单个水文期名称或名称列表。
+        单个监测时段名称或名称列表。
 
     返回
     ----
@@ -604,20 +604,20 @@ def filter_by_period(
         筛选后的数据子集。
     """
     validate_dataframe(df)
-    validate_columns_exist(df, ["水文期"])
+    validate_columns_exist(df, ["监测时段"])
 
     # --- 参数标准化 ---
     if isinstance(periods, str):
         periods = [periods]
 
     # --- 校验 ---
-    valid_periods: set = set(df["水文期"].unique())
+    valid_periods: set = set(df["监测时段"].unique())
     valid_input: list = [p for p in periods if p in valid_periods]
     if not valid_input:
-        raise ValueError("所有传入的水文期名称在数据集中都不存在。")
+        raise ValueError("所有传入的监测时段名称在数据集中都不存在。")
 
-    filtered: pd.DataFrame = df[df["水文期"].isin(valid_input)].copy()
-    print(f"  [信息] 按水文期筛选后保留 {len(filtered)}/{len(df)} 条记录。")
+    filtered: pd.DataFrame = df[df["监测时段"].isin(valid_input)].copy()
+    print(f"  [信息] 按监测时段筛选后保留 {len(filtered)}/{len(df)} 条记录。")
     return filtered
 
 
@@ -635,7 +635,7 @@ def aggregate_by_group(
     df : pd.DataFrame
         待聚合的数据集。
     group_cols : List[str]
-        分组列名列表（如 ['湖泊名称', '水文期']）。
+        分组列名列表（如 ['湖泊名称', '监测时段']）。
     agg_cols : Optional[List[str]]
         需要聚合的数值列名列表。若为 None，则对所有数值列进行聚合。
     agg_func : str
@@ -1086,7 +1086,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     - 列名智能映射（70+ 种常见水质列名）
     - 叶绿素单位转换（mg/L → μg/L）
     - 缺失字段补全（GSM/2-MIB 等自动以 NaN 填充）
-    - 湖泊名称和水文期自动推断
+    - 湖泊名称和监测时段自动推断
 
     参数
     ----
@@ -1220,7 +1220,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     # --- 补全缺失的必需字段 ---
     required_cols: list = [
-        "湖泊名称", "采样点位", "水文期", "采样日期",
+        "湖泊名称", "采样点位", "监测时段", "采样日期",
         "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn", "叶绿素a",
         "GSM", "2-MIB",
     ]
@@ -1229,8 +1229,8 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         if col not in result.columns:
             result[col] = float("nan")
 
-    # --- 自动推断水文期 ---
-    if result["水文期"].isna().all():
+    # --- 自动推断监测时段 ---
+    if result["监测时段"].isna().all():
         month = datetime.datetime.now().month
         # 尝试从文件名或日期列推断
         date_hint = file_path.lower()
@@ -1246,7 +1246,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
             period = "藻类生长期（6-8月）"
         else:
             period = "爆发期（9-11月）"
-        result["水文期"] = period
+        result["监测时段"] = period
 
     # --- 自动添加采样日期 ---
     if result["采样日期"].isna().all():
@@ -1254,7 +1254,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     # --- 重新排序列 ---
     preferred_order = [
-        "湖泊名称", "采样点位", "水文期", "采样日期",
+        "湖泊名称", "采样点位", "监测时段", "采样日期",
         "水温", "pH", "DO", "浊度",
         "TN", "TP", "NH3-N", "CODMn",
         "叶绿素a", "藻密度", "电导率", "氧化还原电位",
@@ -1308,10 +1308,10 @@ if __name__ == "__main__":
     print("\n[4/5] 按湖泊筛选...")
     filtered_df: pd.DataFrame = filter_by_lake(filled_df, ["千岛湖", "太湖"])
 
-    print("\n[5/5] 按水文期分组聚合...")
+    print("\n[5/5] 按监测时段分组聚合...")
     agg_result: pd.DataFrame = aggregate_by_group(
         filtered_df,
-        group_cols=["湖泊名称", "水文期"],
+        group_cols=["湖泊名称", "监测时段"],
         agg_func="mean"
     )
     print("\n聚合结果：")

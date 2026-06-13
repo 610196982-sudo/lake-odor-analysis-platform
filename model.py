@@ -692,7 +692,7 @@ if __name__ == "__main__":
     print(f"预测浓度：{risk_result['预测浓度']} ng/L → {risk_result['风险等级']}")
 
     print("\n[6/6] 执行方差分析...")
-    anova_result = run_anova_analysis(df, value_col="GSM", group_col="水文期")
+    anova_result = run_anova_analysis(df, value_col="GSM", group_col="监测时段")
     print(f"ANOVA：F={anova_result['ANOVA_F统计量']}, p={anova_result['ANOVA_p值']} ({anova_result['ANOVA显著性']})")
 
     print("\n" + "=" * 60)

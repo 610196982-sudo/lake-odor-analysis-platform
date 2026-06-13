@@ -266,10 +266,10 @@ def plot_temporal_trend(
 
 def plot_boxplot_comparison(
     df: pd.DataFrame,
-    x_col: str = "水文期",
+    x_col: str = "监测时段",
     y_col: str = "GSM",
     hue_col: Optional[str] = "湖泊名称",
-    title: str = "不同水文期嗅味物质（GSM）浓度分布对比",
+    title: str = "不同监测时段嗅味物质（GSM）浓度分布对比",
     figsize: Tuple[int, int] = (12, 6)
 ) -> plt.Figure:
     """
@@ -672,7 +672,7 @@ def plot_multi_panel_dashboard(
         # 排除分类列和嗅味物质列
         exclude_cols: set = {
             target_col, "GSM", "2-MIB",
-            "湖泊名称", "采样点位", "水文期", "采样日期",
+            "湖泊名称", "采样点位", "监测时段", "采样日期",
         }
         predictor_cols = [
             c for c in df.select_dtypes(include=[np.number]).columns
@@ -772,7 +772,7 @@ def plot_bar_comparison(
     df: pd.DataFrame,
     x_col: str = "湖泊名称",
     y_col: str = "GSM",
-    hue_col: Optional[str] = "水文期",
+    hue_col: Optional[str] = "监测时段",
     agg_func: str = "mean",
     title: str = "各湖泊嗅味物质（GSM）平均浓度对比",
     figsize: Tuple[int, int] = (10, 6)
@@ -975,13 +975,13 @@ if __name__ == "__main__":
     )
 
     # 测试 2：箱线图
-    print("\n[3/5] 绘制水文期箱线图...")
+    print("\n[3/5] 绘制监测时段箱线图...")
     fig2 = plot_boxplot_comparison(
         df,
-        x_col="水文期",
+        x_col="监测时段",
         y_col="GSM",
         hue_col="湖泊名称",
-        title="不同水文期嗅味物质（GSM）浓度分布对比",
+        title="不同监测时段嗅味物质（GSM）浓度分布对比",
     )
 
     # 测试 3：相关性热力图

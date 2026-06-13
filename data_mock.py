@@ -37,14 +37,14 @@ SAMPLING_POINTS: dict = {
     "淀山湖": ["淀山湖-入湖口", "淀山湖-湖心", "淀山湖-出湖口"],
 }
 
-# 三个水文期定义
+# 三个监测时段定义
 HYDROLOGICAL_PERIODS: list = [
     "平水期（3-5月）",
     "藻类生长期（6-8月）",
     "爆发期（9-11月）"
 ]
 
-# 各水文期的月份映射（用于生成符合季节特征的数据）
+# 各监测时段的月份映射（用于生成符合季节特征的数据）
 PERIOD_MONTHS: dict = {
     "平水期（3-5月）":    [3, 4, 5],
     "藻类生长期（6-8月）": [6, 7, 8],
@@ -95,23 +95,23 @@ def validate_lake_name(lake_name: str) -> bool:
 
 def validate_hydrological_period(period: str) -> bool:
     """
-    校验水文期名称是否在预定义列表中。
+    校验监测时段名称是否在预定义列表中。
 
     参数
     ----
     period : str
-        待校验的水文期名称字符串。
+        待校验的监测时段名称字符串。
 
     返回
     ----
     bool
-        若水文期名称有效则返回 True，否则返回 False。
+        若监测时段名称有效则返回 True，否则返回 False。
     """
     if not isinstance(period, str):
-        raise TypeError(f"水文期名称必须为字符串类型，当前传入类型为：{type(period)}")
+        raise TypeError(f"监测时段名称必须为字符串类型，当前传入类型为：{type(period)}")
     cleaned_period = period.strip()
     if cleaned_period == "":
-        raise ValueError("水文期名称不能为空字符串。")
+        raise ValueError("监测时段名称不能为空字符串。")
     return cleaned_period in HYDROLOGICAL_PERIODS
 
 
@@ -122,7 +122,7 @@ def validate_sample_count(sample_count: int) -> bool:
     参数
     ----
     sample_count : int
-        每个点位每个水文期的采样数量。
+        每个点位每个监测时段的采样数量。
 
     返回
     ----
@@ -144,7 +144,7 @@ def validate_sample_count(sample_count: int) -> bool:
 
 def generate_water_temperature(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     """
-    根据水文期和湖泊名称生成符合季节性规律的水温模拟数据（单位：℃）。
+    根据监测时段和湖泊名称生成符合季节性规律的水温模拟数据（单位：℃）。
 
     水温的季节性规律设定：
     - 平水期（3-5月）：气温回升，水温在 12~22℃ 之间波动，均值为 17℃。
@@ -158,7 +158,7 @@ def generate_water_temperature(period: str, lake_name: str, size: int = 10) -> n
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -174,7 +174,7 @@ def generate_water_temperature(period: str, lake_name: str, size: int = 10) -> n
     validate_lake_name(lake_name)
     validate_sample_count(size)
 
-    # --- 根据水文期设定基础均值和标准差 ---
+    # --- 根据监测时段设定基础均值和标准差 ---
     if period == "平水期（3-5月）":
         base_mean: float = 17.0
         base_std: float = 3.0
@@ -218,7 +218,7 @@ def generate_water_temperature(period: str, lake_name: str, size: int = 10) -> n
 
 def generate_dissolved_oxygen(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     """
-    根据水文期和湖泊名称生成溶解氧（DO）模拟数据（单位：mg/L）。
+    根据监测时段和湖泊名称生成溶解氧（DO）模拟数据（单位：mg/L）。
 
     溶解氧的季节性规律设定：
     - 平水期（3-5月）：春季浮游植物开始生长，DO 较高，均值约 9.0 mg/L。
@@ -233,7 +233,7 @@ def generate_dissolved_oxygen(period: str, lake_name: str, size: int = 10) -> np
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -249,7 +249,7 @@ def generate_dissolved_oxygen(period: str, lake_name: str, size: int = 10) -> np
     validate_lake_name(lake_name)
     validate_sample_count(size)
 
-    # --- 根据水文期设定基础均值和标准差 ---
+    # --- 根据监测时段设定基础均值和标准差 ---
     if period == "平水期（3-5月）":
         base_mean: float = 9.0
         base_std: float = 1.5
@@ -290,7 +290,7 @@ def generate_dissolved_oxygen(period: str, lake_name: str, size: int = 10) -> np
 
 def generate_ph(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     """
-    根据水文期和湖泊名称生成 pH 值模拟数据。
+    根据监测时段和湖泊名称生成 pH 值模拟数据。
 
     pH 值的季节性规律设定：
     - 平水期（3-5月）：pH 较为中性，均值约 7.2。
@@ -304,7 +304,7 @@ def generate_ph(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -320,7 +320,7 @@ def generate_ph(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     validate_lake_name(lake_name)
     validate_sample_count(size)
 
-    # --- 根据水文期设定基础均值和标准差 ---
+    # --- 根据监测时段设定基础均值和标准差 ---
     if period == "平水期（3-5月）":
         base_mean: float = 7.2
         base_std: float = 0.4
@@ -359,7 +359,7 @@ def generate_ph(period: str, lake_name: str, size: int = 10) -> np.ndarray:
 
 def generate_turbidity(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     """
-    根据水文期和湖泊名称生成浊度模拟数据（单位：NTU）。
+    根据监测时段和湖泊名称生成浊度模拟数据（单位：NTU）。
 
     浊度的季节性规律设定：
     - 平水期（3-5月）：春季降雨适中，浊度中等，均值约 10 NTU。
@@ -373,7 +373,7 @@ def generate_turbidity(period: str, lake_name: str, size: int = 10) -> np.ndarra
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -389,7 +389,7 @@ def generate_turbidity(period: str, lake_name: str, size: int = 10) -> np.ndarra
     validate_lake_name(lake_name)
     validate_sample_count(size)
 
-    # --- 根据水文期设定基础均值和标准差 ---
+    # --- 根据监测时段设定基础均值和标准差 ---
     if period == "平水期（3-5月）":
         base_mean: float = 10.0
         base_std: float = 5.0
@@ -461,7 +461,7 @@ def generate_nutrients(
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     nutrient_type : str
@@ -486,7 +486,7 @@ def generate_nutrients(
             f"可选值：{valid_nutrients}"
         )
 
-    # --- 各营养盐在各水文期的基础参数设定 ---
+    # --- 各营养盐在各监测时段的基础参数设定 ---
     nutrient_params: dict = {
         "TN": {
             "平水期（3-5月）":    (1.0, 0.4),
@@ -555,7 +555,7 @@ def generate_nutrients(
 
 def generate_chlorophyll_a(period: str, lake_name: str, size: int = 10) -> np.ndarray:
     """
-    根据水文期和湖泊名称生成叶绿素a（Chl-a）模拟数据（单位：μg/L）。
+    根据监测时段和湖泊名称生成叶绿素a（Chl-a）模拟数据（单位：μg/L）。
 
     叶绿素a的季节性规律设定：
     - 平水期（3-5月）：藻类开始复苏，Chl-a 均值约 5 μg/L。
@@ -569,7 +569,7 @@ def generate_chlorophyll_a(period: str, lake_name: str, size: int = 10) -> np.nd
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -585,7 +585,7 @@ def generate_chlorophyll_a(period: str, lake_name: str, size: int = 10) -> np.nd
     validate_lake_name(lake_name)
     validate_sample_count(size)
 
-    # --- 根据水文期设定基础参数 ---
+    # --- 根据监测时段设定基础参数 ---
     if period == "平水期（3-5月）":
         base_mean: float = 5.0
         base_std: float = 3.0
@@ -651,7 +651,7 @@ def generate_odorants(period: str, lake_name: str, size: int = 10) -> pd.DataFra
     参数
     ----
     period : str
-        水文期名称。
+        监测时段名称。
     lake_name : str
         湖泊名称。
     size : int
@@ -735,10 +735,10 @@ def generate_full_mock_dataset(
     random_seed: int = 42
 ) -> pd.DataFrame:
     """
-    生成完整的模拟监测数据集，覆盖五大湖泊、三个水文期、各三个点位。
+    生成完整的模拟监测数据集，覆盖五大湖泊、三个监测时段、各三个点位。
 
     数据集包含以下字段：
-    - 基本信息：湖泊名称、采样点位、水文期、采样日期
+    - 基本信息：湖泊名称、采样点位、监测时段、采样日期
     - 常规理化指标：水温(℃)、pH、DO(mg/L)、浊度(NTU)
     - 营养盐指标：TN(mg/L)、TP(mg/L)、NH3-N(mg/L)、CODMn(mg/L)
     - 生物学指标：叶绿素a(μg/L)
@@ -747,8 +747,8 @@ def generate_full_mock_dataset(
     参数
     ----
     samples_per_period : int
-        每个点位每个水文期的采样数量，默认值为 20。
-        设 20 时，总数据量 = 5湖泊 × 3点位 × 3水文期 × 20 = 900 条记录。
+        每个点位每个监测时段的采样数量，默认值为 20。
+        设 20 时，总数据量 = 5湖泊 × 3点位 × 3监测时段 × 20 = 900 条记录。
     random_seed : int
         全局随机种子，用于保证结果可复现，默认值为 42。
 
@@ -763,7 +763,7 @@ def generate_full_mock_dataset(
     >>> print(df.shape)
     (225, 14)
     >>> print(df.columns.tolist())
-    ['湖泊名称', '采样点位', '水文期', '采样日期', '水温', 'pH', 'DO', '浊度',
+    ['湖泊名称', '采样点位', '监测时段', '采样日期', '水温', 'pH', 'DO', '浊度',
      'TN', 'TP', 'NH3-N', 'CODMn', '叶绿素a', 'GSM', '2-MIB']
     """
     # --- 参数校验 ---
@@ -792,12 +792,12 @@ def generate_full_mock_dataset(
     # --- 初始化结果列表 ---
     all_records: list = []
 
-    # --- 三重循环：湖泊 × 点位 × 水文期 ---
+    # --- 三重循环：湖泊 × 点位 × 监测时段 ---
     for lake_name in LAKE_NAMES:
         for point in SAMPLING_POINTS[lake_name]:
             for period in HYDROLOGICAL_PERIODS:
 
-                # 获取该水文期对应的月份列表
+                # 获取该监测时段对应的月份列表
                 months = PERIOD_MONTHS[period]
 
                 # 批量生成各指标数据
@@ -845,7 +845,7 @@ def generate_full_mock_dataset(
                     record: dict = {
                         "湖泊名称": lake_name,
                         "采样点位": point,
-                        "水文期":  period,
+                        "监测时段":  period,
                         "采样日期": sample_date,
                         "水温":    water_temp[i],
                         "pH":      ph_values[i],
