@@ -29,38 +29,125 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # 全局可视化配置
 # ============================================================================
 
-# --- 中文字体配置 ---
-# 尝试多种常见中文字体，确保跨平台兼容
-CHINESE_FONTS: list = [
-    "Microsoft YaHei",      # 微软雅黑（Windows）
-    "SimHei",               # 黑体（Windows）
-    "PingFang SC",          # 苹方（macOS）
-    "Hiragino Sans GB",     # 冬青黑体（macOS）
-    "Noto Sans CJK SC",     # 思源黑体（Linux）
-    "WenQuanYi Micro Hei",  # 文泉驿微米黑（Linux）
-    "SimSun",               # 宋体（Windows 备选）
-]
+# --- 中文字体配置（鲁棒跨平台方案）---
+def _setup_chinese_font() -> str:
+    """
+    检测并配置中文字体，确保在 Windows / macOS / Linux（含 Streamlit Cloud）上正确渲染中文。
 
-# 检测并设置可用中文字体
-AVAILABLE_FONT: Optional[str] = None
-for font_name in CHINESE_FONTS:
-    try:
-        test_fp = FontProperties(family=font_name)
-        # 简单测试：尝试获取字体名称
-        _ = test_fp.get_name()
-        AVAILABLE_FONT = font_name
-        break
-    except Exception:
-        continue
+    检测策略：
+    1. 扫描 matplotlib 已知的所有 TrueType 字体，寻找 CJK 字体
+    2. 若未找到，依次检查常见系统路径
+    3. 若仍未找到，尝试从 Google Fonts 下载 Noto Sans SC（仅限 Linux/云端环境）
+    4. 全部失败则返回 sans-serif 并发出警告
 
-if AVAILABLE_FONT is None:
-    # 如果所有预设字体都不可用，尝试使用默认字体
-    print("  [WARNING] No Chinese font detected, chart labels may not render correctly.")
-    AVAILABLE_FONT = "sans-serif"
+    返回
+    ----
+    str
+        实际可用的字体名称。
+    """
+    from matplotlib.font_manager import fontManager, FontProperties
+    import os
+    import sys
+
+    # -- 策略1：扫描 matplotlib 已注册的字体 ---
+    cjk_keywords = [
+        "CJK", "Hei", "Ming", "Song", "YaHei", "SimHei", "SimSun",
+        "Noto Sans", "WenQuanYi", "PingFang", "Hiragino",
+        "Microsoft YaHei", "Source Han", "Droid Sans",
+    ]
+    for font in fontManager.ttflist:
+        name = font.name
+        for kw in cjk_keywords:
+            if kw.lower() in name.lower():
+                plt.rcParams["font.sans-serif"] = [name]
+                print(f"  [信息] 已启用中文字体：{name}（来源：{font.fname}）")
+                return name
+
+    # -- 策略2：检查常见系统字体路径 ---
+    _candidate_paths = []
+    if sys.platform == "win32":
+        _candidate_paths = [
+            "C:/Windows/Fonts/msyh.ttc",
+            "C:/Windows/Fonts/simhei.ttf",
+            "C:/Windows/Fonts/simsun.ttc",
+        ]
+    elif sys.platform == "darwin":
+        _candidate_paths = [
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/Hiragino Sans GB.ttc",
+            "/Library/Fonts/Arial Unicode.ttf",
+        ]
+    else:  # Linux / Streamlit Cloud
+        _candidate_paths = [
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+            "/usr/share/fonts/wqy-microhei/wqy-microhei.ttc",
+            "/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc",
+            "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+            "/usr/share/fonts/truetype/arphic/uming.ttc",
+            "/usr/share/fonts/truetype/arphic/ukai.ttc",
+        ]
+
+    for path in _candidate_paths:
+        if os.path.exists(path):
+            fontManager.addfont(path)
+            # 获取字体名称
+            fp = FontProperties(fname=path)
+            name = fp.get_name()
+            plt.rcParams["font.sans-serif"] = [name]
+            print(f"  [信息] 已启用中文字体：{name}（路径：{path}）")
+            return name
+
+    # -- 策略3：尝试从网络下载（仅 Linux 环境）---
+    if sys.platform != "win32" and sys.platform != "darwin":
+        try:
+            import urllib.request
+            font_dir = os.path.expanduser("~/.fonts")
+            os.makedirs(font_dir, exist_ok=True)
+            font_path = os.path.join(font_dir, "NotoSansSC-Regular.ttf")
+            if not os.path.exists(font_path):
+                # 使用多个备用 URL
+                urls = [
+                    "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
+                    "https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
+                ]
+                downloaded = False
+                for url in urls:
+                    try:
+                        print(f"  [信息] 正在下载中文字体...")
+                        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                        with urllib.request.urlopen(req, timeout=30) as resp:
+                            with open(font_path, "wb") as f:
+                                f.write(resp.read())
+                        downloaded = True
+                        break
+                    except Exception:
+                        continue
+                if not downloaded:
+                    raise RuntimeError("所有下载源均不可用")
+                print(f"  [信息] 字体已下载至：{font_path}")
+            fontManager.addfont(font_path)
+            fp = FontProperties(fname=font_path)
+            name = fp.get_name()
+            plt.rcParams["font.sans-serif"] = [name]
+            print(f"  [信息] 已启用中文字体：{name}")
+            return name
+        except Exception as e:
+            print(f"  [警告] 字体下载失败：{e}")
+
+    # -- 全部失败---
+    print(
+        "  [警告] 未找到任何中文字体！图表中的中文标签可能显示为方框。\n"
+        "         Linux 用户请执行：sudo apt install fonts-noto-cjk"
+    )
     plt.rcParams["font.sans-serif"] = ["sans-serif"]
-else:
-    plt.rcParams["font.sans-serif"] = [AVAILABLE_FONT]
-    print(f"  [信息] 已启用中文字体：{AVAILABLE_FONT}")
+    return "sans-serif"
+
+
+AVAILABLE_FONT: str = _setup_chinese_font()
 
 # --- 全局 matplotlib 参数设置（学术期刊风格）---
 plt.rcParams["axes.unicode_minus"] = False
