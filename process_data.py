@@ -1440,78 +1440,70 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     # 每个表格有自己的表头行（如"点位（5月）"和"点位（6月）"），
     # 中间以空行分隔。
     #
-    # 识别特征：
-    #   1. 存在空行
-    #   2. 空行下方的行第一列值类似表头（如包含"点位"、"月"等）
-    #   3. 空行上下数据列数或内容特征相似
+    # 采用双重检测策略（更鲁棒）：
+    #   A. 扫描数据行首列，寻找"点位（X月）"样式的段表头
+    #   B. 以空行为辅助边界标记
 
-    sections = []  # List of (section_df, inferred_month_or_label)
+    sections = []
 
-    # 检测是否有多段特征
-    first_col_name = str(raw_df.columns[0])
-    # 找到所有全为空（或几乎全空）的行
+    # 策略A：扫描所有行，寻找段表头标记
+    # 先检查 raw_df.columns[0] 是否本身就是一个段表头（如"点位（5月）"）
+    header_row_indices = []
+    first_col = str(raw_df.columns[0])
+    if re.search(r'点位[（(]\d+月[）)]', first_col):
+        # 第一段的表头在 columns 中，段索引记为 0
+        header_row_indices.append(0)
+
+    # 再扫描数据行中是否还有段表头（如后续月份的"点位（6月）"）
+    for i in range(len(raw_df)):
+        first_cell = str(raw_df.iloc[i, 0])
+        if re.search(r'点位[（(]\d+月[）)]', first_cell):
+            header_row_indices.append(i)
+
+    # 策略B：辅助用空行（几乎全空的行）
     empty_row_indices = []
     for i in range(len(raw_df)):
-        row = raw_df.iloc[i]
-        non_null_count = row.notna().sum()
-        if non_null_count <= 1:  # 整行几乎为空
+        non_null_count = raw_df.iloc[i].notna().sum()
+        if non_null_count <= 1:
             empty_row_indices.append(i)
 
-    # 初步判断是否为多段结构
-    is_multi_section = False
-    if len(empty_row_indices) >= 1:
-        for empty_idx in empty_row_indices:
-            if empty_idx + 1 < len(raw_df):
-                next_row_first = str(raw_df.iloc[empty_idx + 1, 0])
-                # 下一行的首列是否看起来像表头
-                if any(kw in next_row_first for kw in ["点位", "月", "监测", "采样"]):
-                    is_multi_section = True
-                    break
+    is_multi_section = len(header_row_indices) >= 1
 
     if is_multi_section:
-        print("  [信息] 检测到多段式数据结构（含多个独立表格），将自动拆分。")
-        # 确定分段边界
-        # 注意：pandas 默认 header=0 将 Excel 第一行作为列名，
-        # 因此 raw_df.iloc[0] 实际是 Excel 第二行（数据），raw_df.columns 是第一行（表头）。
-        section_boundaries = [-1]  # 每个段起始行前一行的索引
-        for empty_idx in empty_row_indices:
-            if empty_idx + 1 < len(raw_df):
-                next_first = str(raw_df.iloc[empty_idx + 1, 0])
-                if any(kw in next_first for kw in ["点位", "月"]):
-                    section_boundaries.append(empty_idx)
-        section_boundaries.append(len(raw_df))
+        n_sections = len(header_row_indices)
+        # 如果有多个段表头，第一个其实是 Excel 的真实表头（已被 pandas 当作列名），
+        # 后面的段表头出现在数据行中
+        has_real_headers_in_data = any(h >= 0 for h in header_row_indices)
 
-        for si in range(len(section_boundaries) - 1):
-            start_row = section_boundaries[si] + 1
-            end_row = section_boundaries[si + 1]
+        print(f"  [信息] 检测到多段式数据结构：发现 {n_sections} 个段表头标记。")
 
-            if start_row >= end_row:
-                continue
+        # 构建段边界：每个段从 header_row 开始，到下一个 header_row 或空行或末尾结束
+        for hi, hdr_idx in enumerate(header_row_indices):
+            # 确定该段的结束位置
+            end_row = len(raw_df)
+            # 下一个段表头
+            if hi + 1 < len(header_row_indices):
+                end_row = min(end_row, header_row_indices[hi + 1])
+            # 下一个空行（但至少要有1行数据）
+            for ei in empty_row_indices:
+                if ei > hdr_idx and ei < end_row:
+                    end_row = ei
+                    break
 
-            if si == 0:
-                # 第一个段：表头用 raw_df.columns（Excel 第一行），数据用 raw_df.iloc[0:end_row]
+            if hdr_idx == 0:
+                # 第一个段：表头已经在 raw_df.columns 中
                 header_values = [str(c).strip() for c in raw_df.columns]
                 section_data = raw_df.iloc[0:end_row].copy()
-                month_label = None
-                header_text = " ".join(header_values)
-                month_match = re.search(r'(\d+)\s*月', header_text)
-                if month_match:
-                    month_label = f"{int(month_match.group(1))}月"
             else:
-                # 后续段：表头在数据的第一行
-                header_row = raw_df.iloc[start_row]
+                # 后续段：表头是该行的值
+                header_row = raw_df.iloc[hdr_idx]
                 header_values = [str(v).strip() if pd.notna(v) else "" for v in header_row]
-                section_data = raw_df.iloc[start_row + 1:end_row].copy()
-                month_label = None
-                header_text = " ".join(header_values)
-                month_match = re.search(r'(\d+)\s*月', header_text)
-                if month_match:
-                    month_label = f"{int(month_match.group(1))}月"
+                section_data = raw_df.iloc[hdr_idx + 1:end_row].copy()
 
             if section_data.shape[0] < 1:
                 continue
 
-            # 清理列名中的 "Unnamed" 占位
+            # 清理列名
             header_clean = []
             for h in header_values:
                 h = h.strip()
@@ -1520,6 +1512,13 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
                 header_clean.append(h)
 
             section_data.columns = header_clean
+
+            # 推断月份
+            month_label = None
+            header_text = " ".join(header_values)
+            month_match = re.search(r'(\d+)\s*月', header_text)
+            if month_match:
+                month_label = f"{int(month_match.group(1))}月"
 
             print(f"  [信息]   第 {len(sections) + 1} 段：{len(section_data)} 行数据，"
                   f"推断月份：{month_label or '未知'}")
