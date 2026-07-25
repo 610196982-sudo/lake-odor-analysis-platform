@@ -779,9 +779,11 @@ def normalize_columns(
 
 # 列名映射表：将各种可能的原始列名映射到平台标准列名
 COLUMN_NAME_MAP: dict = {
-    # 溶解氧
+    # 溶解氧（含括号内英文缩写变体）
     "溶解氧（mg/L）": "DO",
     "溶解氧(mg/L)": "DO",
+    "溶解氧（DO）（mg/L）": "DO",
+    "溶解氧(DO)(mg/L)": "DO",
     "溶解氧": "DO",
     "DO(mg/L)": "DO",
     "DO（mg/L）": "DO",
@@ -820,25 +822,39 @@ COLUMN_NAME_MAP: dict = {
     "NH3-N": "NH3-N",
     "NH4-N": "NH3-N",
     "NH3N": "NH3-N",
-    # CODMn
+    # CODMn（含括号内英文缩写变体）
     "COD锰（mg/L）": "CODMn",
     "COD锰(mg/L)": "CODMn",
     "CODMn（mg/L）": "CODMn",
     "高锰酸盐指数（mg/L）": "CODMn",
     "高锰酸盐指数(mg/L)": "CODMn",
+    "高锰酸盐指数（CODMn）（mg/L）": "CODMn",
+    "高锰酸盐指数(CODMn)(mg/L)": "CODMn",
     "高锰酸盐指数": "CODMn",
     "CODMn": "CODMn",
     "COD_Mn": "CODMn",
-    # 叶绿素
+    # 叶绿素（扩展映射）
     "叶绿素（mg/L）": "叶绿素a_raw_mgL",
     "叶绿素(mg/L)": "叶绿素a_raw_mgL",
+    "叶绿素a（mg/L）": "叶绿素a_raw_mgL",
+    "叶绿素a(mg/L)": "叶绿素a_raw_mgL",
     "叶绿素a（μg/L）": "叶绿素a",
     "叶绿素a(μg/L)": "叶绿素a",
     "叶绿素a（ug/L）": "叶绿素a",
+    "叶绿素a(ug/L)": "叶绿素a",
     "叶绿素（μg/L）": "叶绿素a",
     "叶绿素(μg/L)": "叶绿素a",
+    "叶绿素（ug/L）": "叶绿素a",
+    "叶绿素(ug/L)": "叶绿素a",
     "叶绿素a": "叶绿素a",
+    "chl（现场）（ug/L）": "叶绿素a",
+    "chl(现场)(ug/L)": "叶绿素a",
+    "叶绿素（送检）（µg/L）": "叶绿素a_送检",
+    "叶绿素(送检)(µg/L)": "叶绿素a_送检",
+    "叶绿素（送检）（μg/L）": "叶绿素a_送检",
+    "叶绿素(送检)(μg/L)": "叶绿素a_送检",
     "Chl-a(μg/L)": "叶绿素a",
+    "Chl-a(ug/L)": "叶绿素a",
     "Chla": "叶绿素a",
     "叶绿素": "叶绿素a_raw_mgL",
     # 水温
@@ -849,18 +865,29 @@ COLUMN_NAME_MAP: dict = {
     "温度(℃)": "水温",
     "温度": "水温",
     "WT": "水温",
-    # GSM / 2-MIB
+    # GSM / 2-MIB（扩展映射，覆盖更多写法）
     "GSM（ng/L）": "GSM",
     "GSM(ng/L)": "GSM",
     "GSM": "GSM",
     "土臭素（ng/L）": "GSM",
+    "土臭素(ng/L)": "GSM",
     "土臭素": "GSM",
+    "geosmin": "GSM",
+    "Geosmin": "GSM",
     "2-MIB（ng/L）": "2-MIB",
     "2-MIB(ng/L)": "2-MIB",
     "2-MIB": "2-MIB",
     "2MIB": "2-MIB",
     "二甲基异莰醇": "2-MIB",
-    # 点位/站点
+    "二甲基异莰醇（ng/L）": "2-MIB",
+    "二甲基异莰醇(ng/L)": "2-MIB",
+    "2-甲基异莰醇": "2-MIB",
+    "2-甲基异莰醇（ng/L）": "2-MIB",
+    "2-甲基异莰醇(ng/L)": "2-MIB",
+    "MIB": "2-MIB",
+    "MIB（ng/L）": "2-MIB",
+    "MIB(ng/L)": "2-MIB",
+    # 点位/站点（含月份标注变体）
     "点位": "采样点位",
     "站点": "采样点位",
     "采样点": "采样点位",
@@ -868,6 +895,19 @@ COLUMN_NAME_MAP: dict = {
     "采样点位": "采样点位",
     "监测点": "采样点位",
     "站点名称": "采样点位",
+    "点位（5月）": "采样点位",
+    "点位（6月）": "采样点位",
+    "点位（3月）": "采样点位",
+    "点位（4月）": "采样点位",
+    "点位（7月）": "采样点位",
+    "点位（8月）": "采样点位",
+    "点位（9月）": "采样点位",
+    "点位（10月）": "采样点位",
+    "点位（11月）": "采样点位",
+    "点位(5月)": "采样点位",
+    "点位(6月)": "采样点位",
+    "点位(3月)": "采样点位",
+    "点位(4月)": "采样点位",
     # 经度/纬度
     "经度": "经度",
     "lon": "经度",
@@ -879,19 +919,257 @@ COLUMN_NAME_MAP: dict = {
     "电导率（ms/cm）": "电导率",
     "电导率(ms/cm)": "电导率",
     "电导率（μS/cm）": "电导率",
+    "电导率（SPC）（ms/cm）": "电导率",
+    "电导率(SPC)(ms/cm)": "电导率",
+    "电导率（SPC）": "电导率",
+    "SPC（ms/cm）": "电导率",
+    "SPC(ms/cm)": "电导率",
     "电导率": "电导率",
     "Cond": "电导率",
+    "电导率（μs/cm）": "电导率",
     # 氧化还原电位
     "氧化还原电位（mV）": "氧化还原电位",
     "氧化还原电位(mV)": "氧化还原电位",
+    "氧化还原电位（ORF）（mV）": "氧化还原电位",
+    "氧化还原电位(ORF)(mV)": "氧化还原电位",
+    "氧化还原电位（ORP）（mV）": "氧化还原电位",
+    "氧化还原电位(ORP)(mV)": "氧化还原电位",
     "氧化还原电位": "氧化还原电位",
     "ORP": "氧化还原电位",
+    "ORF": "氧化还原电位",
     # 藻密度
     "藻密度（万个/L）": "藻密度",
     "藻密度(万个/L)": "藻密度",
     "藻密度": "藻密度",
     "藻细胞密度": "藻密度",
+    # 水温（更多变体）
+    "WT（℃）": "水温",
+    "WT(℃)": "水温",
+    "WT": "水温",
+    "Temp": "水温",
+    "温度（℃）": "水温",
+    "温度": "水温",
+    # 盐度
+    "盐度（SAL）": "盐度",
+    "盐度(SAL)": "盐度",
+    "SAL": "盐度",
+    "盐度": "盐度",
+    # 总悬浮固体
+    "总悬浮固体（TSS）（mg/L）": "TSS",
+    "总悬浮固体(TSS)(mg/L)": "TSS",
+    "TSS（mg/L）": "TSS",
+    "TSS(mg/L)": "TSS",
+    "TSS": "TSS",
+    # DO 饱和度
+    "DO（%）": "DO饱和度",
+    "DO(%)": "DO饱和度",
+    "DO（%RTB）": "DO饱和度RTB",
+    "DO(%RTB)": "DO饱和度RTB",
+    # 压力
+    "压力（Kpa）": "压力",
+    "压力(Kpa)": "压力",
+    "压力（kPa）": "压力",
+    "压力(kPa)": "压力",
+    # PC
+    "PC（ug/L）": "PC",
+    "PC(ug/L)": "PC",
+    "PC（μg/L）": "PC",
+    "PC(μg/L)": "PC",
+    # fDOM
+    "fDOM（QSU）": "fDOM",
+    "fDOM(QSU)": "fDOM",
+    "fDOM ppd": "fDOM_ppd",
+    # 水深 / 海拔
+    "DEP（m）": "DEP",
+    "DEP(m)": "DEP",
+    "ALT（m）": "ALT",
+    "ALT(m)": "ALT",
+    # 月份标注列（如 "点位（5月）" → 用于推断监测时段）
+    # 这些列在 smart_import 内部会被特殊处理，此处仅保留占位
 }
+
+
+# ============================================================================
+# 点位→湖泊映射表
+# ============================================================================
+
+# 各监测点位所属湖泊/水库的映射关系
+# 用于智能导入时自动识别点位归属，无需用户手动指定
+POINT_LAKE_MAP: dict = {
+    # === 太湖 ===
+    "平台山":       "太湖",
+    "泽山":         "太湖",
+    "十四号灯标":   "太湖",
+    "太湖平台山":   "太湖",
+    "太湖泽山":     "太湖",
+    "太湖十四号灯标": "太湖",
+    "漫山":         "太湖",
+    "拖山":         "太湖",
+    "椒山":         "太湖",
+    "沙渚":         "太湖",
+    "沙墩港":       "太湖",
+    # === 淀山湖 ===
+    "淀山湖中":     "淀山湖",
+    "淀山湖":       "淀山湖",
+    # === 玄武湖 ===
+    "玄武湖":       "玄武湖",
+    # === 长荡湖 ===
+    "长荡湖":       "长荡湖",
+    # === 南湖 ===
+    "南湖中心":     "南湖",
+    "南湖":         "南湖",
+    # === 潜明水库 ===
+    "潜明水库":     "潜明水库",
+    # === 千岛湖 ===
+    "千岛湖":       "千岛湖",
+    "千岛湖-入湖口": "千岛湖",
+    "千岛湖-湖心":   "千岛湖",
+    "千岛湖-出湖口": "千岛湖",
+    # === 巢湖 ===
+    "巢湖":         "巢湖",
+    "巢湖-入湖口":   "巢湖",
+    "巢湖-湖心":     "巢湖",
+    "巢湖-出湖口":   "巢湖",
+    # === 太湖（兼容旧格式）===
+    "太湖-入湖口":   "太湖",
+    "太湖-湖心":     "太湖",
+    "太湖-出湖口":   "太湖",
+    # === 长荡湖（兼容旧格式）===
+    "长荡湖-入湖口": "长荡湖",
+    "长荡湖-湖心":   "长荡湖",
+    "长荡湖-出湖口": "长荡湖",
+    # === 淀山湖（兼容旧格式）===
+    "淀山湖-入湖口": "淀山湖",
+    "淀山湖-湖心":   "淀山湖",
+    "淀山湖-出湖口": "淀山湖",
+}
+
+# 所有已知水体名称列表（动态从映射表提取 + 手动补充）
+ALL_KNOWN_LAKES: list = sorted(set(
+    list(POINT_LAKE_MAP.values()) + ["千岛湖", "太湖", "长荡湖", "巢湖", "淀山湖",
+                                       "玄武湖", "南湖", "潜明水库"]
+))
+
+
+def resolve_lake_from_point(point_name: str) -> str:
+    """
+    根据采样点位名称推断所属湖泊/水库。
+
+    优先查 POINT_LAKE_MAP 精确匹配，其次尝试模糊匹配
+    （如点位名以湖泊名开头），最后返回原名称。
+
+    参数
+    ----
+    point_name : str
+        采样点位名称。
+
+    返回
+    ----
+    str
+        推断的湖泊名称。
+    """
+    if not isinstance(point_name, str) or point_name.strip() == "":
+        return "未知水体"
+
+    pn = point_name.strip()
+
+    # 精确匹配
+    if pn in POINT_LAKE_MAP:
+        return POINT_LAKE_MAP[pn]
+
+    # 模糊匹配：点位名以已知湖泊名开头
+    for lake in ALL_KNOWN_LAKES:
+        if pn.startswith(lake):
+            return lake
+
+    return pn  # 无法匹配则返回原点位名
+
+
+def _parse_below_detection(value) -> Optional[float]:
+    """
+    解析低于检出限的表达（如 "＜2.2"、"<0.5"、"ND"）。
+
+    策略：将低于检出限的值替换为检出限的一半（MDL/2），
+    这是环境科学中常用的替代方法。
+
+    参数
+    ----
+    value : any
+        原始值，可能是字符串、数值或 None。
+
+    返回
+    ----
+    Optional[float]
+        解析后的数值，无法解析则返回 None。
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        if np.isnan(value) if isinstance(value, float) else False:
+            return None
+        return float(value)
+
+    s = str(value).strip()
+    if s == "" or s in ("/", "-", "—", "NA", "N/A", "ND", "nd", "null", "NULL"):
+        return None
+
+    # 匹配 "＜X.X" 或 "<X.X" 或 "≤X.X" 格式
+    import re
+    m = re.match(r'[＜<≤]\s*([\d.]+)', s)
+    if m:
+        detection_limit = float(m.group(1))
+        # 返回检出限的一半（MDL/2 替代法）
+        return round(detection_limit / 2.0, 4)
+
+    # 尝试直接转数值
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+
+def _parse_dms_to_decimal(dms_str: str) -> Optional[float]:
+    """
+    将度分秒格式的坐标转换为十进制度。
+
+    支持格式：
+    - "120.1081885"（已是十进制）
+    - "32度04分"（度分格式）
+    - "118度47分"（度分格式）
+
+    参数
+    ----
+    dms_str : str
+        坐标字符串。
+
+    返回
+    ----
+    Optional[float]
+        十进制度数，无法解析则返回 None。
+    """
+    if dms_str is None:
+        return None
+    s = str(dms_str).strip()
+    if s == "" or s in ("/", "-", "—"):
+        return None
+
+    import re
+
+    # 尝试直接解析为浮点数
+    try:
+        return float(s)
+    except ValueError:
+        pass
+
+    # 度分秒格式：XX度XX分 或 XX度XX分XX秒
+    m = re.match(r'(\d+)\s*度\s*(\d+)\s*分(?:\s*(\d+(?:\.\d+)?)\s*秒)?', s)
+    if m:
+        deg = float(m.group(1))
+        min_val = float(m.group(2))
+        sec = float(m.group(3)) if m.group(3) else 0.0
+        return round(deg + min_val / 60.0 + sec / 3600.0, 6)
+
+    return None
 
 
 # --- 编码检测 ---
@@ -1083,23 +1361,29 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     自动处理：
     - 编码检测（UTF-8、GBK、GB2312 等）
     - 分隔符检测
-    - 列名智能映射（70+ 种常见水质列名）
+    - 列名智能映射（100+ 种常见水质列名）
+    - 多段 Excel 自动拆分（同一 Sheet 内含多个月份数据）
+    - 低于检出限（＜）自动解析（MDL/2 替代法）
+    - 度分秒坐标自动转换为十进制度
+    - 点位→湖泊自动归属（POINT_LAKE_MAP）
     - 叶绿素单位转换（mg/L → μg/L）
-    - 缺失字段补全（GSM/2-MIB 等自动以 NaN 填充）
-    - 湖泊名称和监测时段自动推断
+    - 缺失字段补全
+    - 监测时段自动推断
 
     参数
     ----
     file_path : str
         数据文件路径，支持任意扩展名（由内容自动识别格式）。
     lake_name : str
-        湖泊名称，默认 "太湖"。
+        默认湖泊名称（仅当所有点位都无法匹配 POINT_LAKE_MAP 时使用）。
 
     返回
     ----
     pd.DataFrame
         标准化数据集，可直接用于平台所有分析模块。
     """
+    import re
+
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"找不到文件：{file_path}")
 
@@ -1120,13 +1404,11 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     # --- 策略2：按内容特征依次尝试 ---
     if raw_df is None and _is_text_file(file_path):
-        # 先尝试 JSON
         json_df = _try_parse_json(file_path)
         if json_df is not None:
             raw_df = json_df
             detected_format = "JSON"
         else:
-            # 尝试分隔文本
             text_df = _try_parse_text(file_path)
             if text_df is not None:
                 raw_df = text_df
@@ -1135,7 +1417,6 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     # --- 策略3：最后兜底 ---
     if raw_df is None:
-        # 不是文本，试试 Excel（可能扩展名不对）
         raw_df = _try_parse_excel(file_path)
         if raw_df is not None:
             detected_format = "Excel (内容检测)"
@@ -1152,105 +1433,266 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     print(f"  [信息] 识别格式: {detected_format}，共 {len(raw_df)} 行 × {len(raw_df.columns)} 列")
 
-    # --- 如果第一行不是表头（数字列名），尝试用第一行数据作为列名 ---
-    first_col = str(raw_df.columns[0])
-    if first_col.isdigit() or (first_col.startswith("0") and first_col.isdigit()):
-        # 列名是数字 → 可能是无表头的数据
-        print("  [信息] 检测到无表头数据，已尝试推断列名。")
+    # =========================================================================
+    # 多段 Excel 检测与拆分
+    # =========================================================================
+    # 检测是否为"多段式"数据：同一 Sheet 内包含多个独立表格，
+    # 每个表格有自己的表头行（如"点位（5月）"和"点位（6月）"），
+    # 中间以空行分隔。
+    #
+    # 识别特征：
+    #   1. 存在空行
+    #   2. 空行下方的行第一列值类似表头（如包含"点位"、"月"等）
+    #   3. 空行上下数据列数或内容特征相似
 
-    # --- 列名映射 ---
-    mapped: dict = {}
-    unmapped: list = []
-    unmapped_std: list = []
+    sections = []  # List of (section_df, inferred_month_or_label)
 
-    for col in raw_df.columns:
-        col_stripped = str(col).strip()
-        if col_stripped in COLUMN_NAME_MAP:
-            target = COLUMN_NAME_MAP[col_stripped]
-            if target not in mapped:
-                mapped[target] = col
+    # 检测是否有多段特征
+    first_col_name = str(raw_df.columns[0])
+    # 找到所有全为空（或几乎全空）的行
+    empty_row_indices = []
+    for i in range(len(raw_df)):
+        row = raw_df.iloc[i]
+        non_null_count = row.notna().sum()
+        if non_null_count <= 1:  # 整行几乎为空
+            empty_row_indices.append(i)
+
+    # 初步判断是否为多段结构
+    is_multi_section = False
+    if len(empty_row_indices) >= 1:
+        for empty_idx in empty_row_indices:
+            if empty_idx + 1 < len(raw_df):
+                next_row_first = str(raw_df.iloc[empty_idx + 1, 0])
+                # 下一行的首列是否看起来像表头
+                if any(kw in next_row_first for kw in ["点位", "月", "监测", "采样"]):
+                    is_multi_section = True
+                    break
+
+    if is_multi_section:
+        print("  [信息] 检测到多段式数据结构（含多个独立表格），将自动拆分。")
+        # 确定分段边界
+        # 注意：pandas 默认 header=0 将 Excel 第一行作为列名，
+        # 因此 raw_df.iloc[0] 实际是 Excel 第二行（数据），raw_df.columns 是第一行（表头）。
+        section_boundaries = [-1]  # 每个段起始行前一行的索引
+        for empty_idx in empty_row_indices:
+            if empty_idx + 1 < len(raw_df):
+                next_first = str(raw_df.iloc[empty_idx + 1, 0])
+                if any(kw in next_first for kw in ["点位", "月"]):
+                    section_boundaries.append(empty_idx)
+        section_boundaries.append(len(raw_df))
+
+        for si in range(len(section_boundaries) - 1):
+            start_row = section_boundaries[si] + 1
+            end_row = section_boundaries[si + 1]
+
+            if start_row >= end_row:
+                continue
+
+            if si == 0:
+                # 第一个段：表头用 raw_df.columns（Excel 第一行），数据用 raw_df.iloc[0:end_row]
+                header_values = [str(c).strip() for c in raw_df.columns]
+                section_data = raw_df.iloc[0:end_row].copy()
+                month_label = None
+                header_text = " ".join(header_values)
+                month_match = re.search(r'(\d+)\s*月', header_text)
+                if month_match:
+                    month_label = f"{int(month_match.group(1))}月"
             else:
-                pass  # 同名列取第一个
+                # 后续段：表头在数据的第一行
+                header_row = raw_df.iloc[start_row]
+                header_values = [str(v).strip() if pd.notna(v) else "" for v in header_row]
+                section_data = raw_df.iloc[start_row + 1:end_row].copy()
+                month_label = None
+                header_text = " ".join(header_values)
+                month_match = re.search(r'(\d+)\s*月', header_text)
+                if month_match:
+                    month_label = f"{int(month_match.group(1))}月"
+
+            if section_data.shape[0] < 1:
+                continue
+
+            # 清理列名中的 "Unnamed" 占位
+            header_clean = []
+            for h in header_values:
+                h = h.strip()
+                if h.startswith("Unnamed") or h == "nan" or h == "None":
+                    h = ""
+                header_clean.append(h)
+
+            section_data.columns = header_clean
+
+            print(f"  [信息]   第 {len(sections) + 1} 段：{len(section_data)} 行数据，"
+                  f"推断月份：{month_label or '未知'}")
+
+            sections.append((section_data, month_label))
+    else:
+        # 单段数据，直接使用
+        sections.append((raw_df, None))
+
+    # =========================================================================
+    # 逐段处理：列名映射 + 数据清洗
+    # =========================================================================
+
+    all_results = []
+
+    for sec_idx, (section_df, month_label) in enumerate(sections):
+        sec_label = f"第{sec_idx + 1}段" if len(sections) > 1 else ""
+
+        # --- 列名映射 ---
+        mapped: dict = {}
+        unmapped: list = []
+        unmapped_std: list = []
+
+        for col in section_df.columns:
+            col_stripped = str(col).strip()
+            if col_stripped in COLUMN_NAME_MAP:
+                target = COLUMN_NAME_MAP[col_stripped]
+                if target not in mapped:
+                    mapped[target] = col
+            else:
+                unmapped.append(col)
+                unmapped_std.append(col_stripped)
+
+        if unmapped and sec_idx == 0:
+            print(f"  [信息] {len(unmapped)} 个列名未在映射表中，已保留原列名。")
+            if len(unmapped) <= 8:
+                print(f"         未映射列: {unmapped_std}")
+
+        # 构建标准化 DataFrame
+        result = pd.DataFrame()
+        for std_name, src_col in mapped.items():
+            result[std_name] = section_df[src_col]
+
+        # 保留未映射的列
+        for col in unmapped:
+            result[str(col).strip()] = section_df[col]
+
+        # --- 过滤全空行 ---
+        # 剔除非关键字段全部为空的行（如纯分隔行）
+        key_check_cols = [c for c in ["采样点位", "水温", "pH", "DO", "TN", "TP",
+                                        "CODMn", "叶绿素a", "GSM", "2-MIB"]
+                          if c in result.columns]
+        if key_check_cols:
+            result = result.dropna(subset=key_check_cols, how="all")
+
+        if result.empty:
+            continue
+
+        # --- 低于检出限值解析（＜）---
+        # 仅对数值型指标列进行解析，跳过文本列（采样点位、湖泊名称等）
+        _text_cols = {"采样点位", "湖泊名称", "监测时段", "采样日期", "经度", "纬度"}
+        _parse_cols = [c for c in result.columns if c not in _text_cols]
+        for col in _parse_cols:
+            result[col] = result[col].apply(_parse_below_detection)
+
+        # --- 坐标转换：度分秒 → 十进制度 ---
+        for coord_col in ["经度", "纬度"]:
+            if coord_col in result.columns:
+                result[coord_col] = result[coord_col].apply(_parse_dms_to_decimal)
+
+        # --- 单位转换：叶绿素 mg/L → μg/L ---
+        if "叶绿素a_raw_mgL" in result.columns:
+            print(f"  [信息] {sec_label} 检测到叶绿素单位为 mg/L，已自动转换为 μg/L（×1000）。")
+            result["叶绿素a_raw"] = pd.to_numeric(result["叶绿素a_raw_mgL"], errors="coerce") * 1000
+            # 如果已有叶绿素a（来自其他源头），优先保留；否则用转换后的
+            if "叶绿素a" not in result.columns or result["叶绿素a"].isna().all():
+                result["叶绿素a"] = result["叶绿素a_raw"]
+            else:
+                # 用转换值填补叶绿素a的空缺
+                result["叶绿素a"] = result["叶绿素a"].fillna(result["叶绿素a_raw"])
+            result = result.drop(columns=["叶绿素a_raw_mgL", "叶绿素a_raw"], errors="ignore")
+
+        # 如果有送检叶绿素且现场叶绿素为空，用送检值填补
+        if "叶绿素a_送检" in result.columns:
+            if "叶绿素a" in result.columns:
+                result["叶绿素a"] = result["叶绿素a"].fillna(
+                    pd.to_numeric(result["叶绿素a_送检"], errors="coerce")
+                )
+            else:
+                result["叶绿素a"] = pd.to_numeric(result["叶绿素a_送检"], errors="coerce")
+            result = result.drop(columns=["叶绿素a_送检"], errors="ignore")
+
+        # --- 数据类型自动转换 ---
+        numeric_candidates = [
+            "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn",
+            "叶绿素a", "GSM", "2-MIB", "藻密度", "电导率", "氧化还原电位",
+            "盐度", "TSS", "PC", "fDOM", "fDOM_ppd", "DEP", "ALT",
+            "DO饱和度", "DO饱和度RTB", "压力",
+        ]
+        for col in numeric_candidates:
+            if col in result.columns:
+                result[col] = pd.to_numeric(result[col], errors="coerce")
+
+        # --- 点位→湖泊自动归属 ---
+        if "采样点位" in result.columns:
+            result["湖泊名称"] = result["采样点位"].apply(resolve_lake_from_point)
+
+        # 如果还有未识别的湖泊，用默认值
+        if "湖泊名称" in result.columns:
+            result.loc[result["湖泊名称"].isin(["", "未知水体"]), "湖泊名称"] = lake_name
         else:
-            unmapped.append(col)
-            unmapped_std.append(col_stripped)
-
-    if unmapped:
-        print(f"  [信息] {len(unmapped)} 个列名未在映射表中，已保留原列名。")
-        if len(unmapped) <= 5:
-            print(f"         未映射列: {unmapped_std}")
-
-    # 构建标准化 DataFrame
-    result = pd.DataFrame()
-    for std_name, src_col in mapped.items():
-        result[std_name] = raw_df[src_col]
-
-    # 保留未映射的列
-    for col in unmapped:
-        result[str(col).strip()] = raw_df[col]
-
-    # --- 单位转换：叶绿素 mg/L → μg/L ---
-    if "叶绿素a_raw_mgL" in result.columns:
-        print("  [信息] 检测到叶绿素单位为 mg/L，已自动转换为 μg/L（×1000）。")
-        result["叶绿素a"] = pd.to_numeric(result["叶绿素a_raw_mgL"], errors="coerce") * 1000
-        result = result.drop(columns=["叶绿素a_raw_mgL"])
-
-    # --- 数据类型自动转换 ---
-    numeric_candidates = [
-        "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn",
-        "叶绿素a", "GSM", "2-MIB", "藻密度", "电导率", "氧化还原电位",
-    ]
-    for col in numeric_candidates:
-        if col in result.columns:
-            result[col] = pd.to_numeric(result[col], errors="coerce")
-
-    # --- 补全站点名称 ---
-    if "采样点位" in result.columns:
-        if "湖泊名称" not in result.columns:
             result["湖泊名称"] = lake_name
-        # 自动在点位名前加湖名
-        result["采样点位"] = result.apply(
-            lambda row: (
-                f"{str(row.get('湖泊名称', lake_name))}-{row['采样点位']}"
-                if str(row.get('湖泊名称', '')) not in str(row['采样点位'])
-                else str(row['采样点位'])
-            ),
-            axis=1,
-        )
 
-    # --- 补全缺失的必需字段 ---
-    required_cols: list = [
-        "湖泊名称", "采样点位", "监测时段", "采样日期",
-        "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn", "叶绿素a",
-        "GSM", "2-MIB",
-    ]
+        # --- 补全缺失的必需字段 ---
+        required_cols: list = [
+            "湖泊名称", "采样点位", "监测时段", "采样日期",
+            "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn", "叶绿素a",
+            "GSM", "2-MIB",
+        ]
+        for col in required_cols:
+            if col not in result.columns:
+                result[col] = float("nan")
 
-    for col in required_cols:
-        if col not in result.columns:
-            result[col] = float("nan")
+        # --- 自动推断监测时段 ---
+        if result["监测时段"].isna().all():
+            month_num = None
+            # 策略1：从段标签提取月份
+            if month_label:
+                m = re.search(r'(\d+)', month_label)
+                if m:
+                    month_num = int(m.group(1))
+            # 策略2：从文件名提取月份
+            if month_num is None:
+                for kw, mn in [("5月", 5), ("6月", 6), ("7月", 7), ("8月", 8),
+                                ("9月", 9), ("10月", 10), ("11月", 11),
+                                ("3月", 3), ("4月", 4)]:
+                    if kw in file_path:
+                        month_num = mn
+                        break
+            # 策略3：用当前月份
+            if month_num is None:
+                month_num = datetime.datetime.now().month
 
-    # --- 自动推断监测时段 ---
-    if result["监测时段"].isna().all():
-        month = datetime.datetime.now().month
-        # 尝试从文件名或日期列推断
-        date_hint = file_path.lower()
-        if any(m in date_hint for m in ["3月", "4月", "5月", "mar", "apr", "may"]):
-            period = "平水期（3-5月）"
-        elif any(m in date_hint for m in ["6月", "7月", "8月", "jun", "jul", "aug"]):
-            period = "藻类生长期（6-8月）"
-        elif any(m in date_hint for m in ["9月", "10月", "11月", "sep", "oct", "nov"]):
-            period = "爆发期（9-11月）"
-        elif 3 <= month <= 5:
-            period = "平水期（3-5月）"
-        elif 6 <= month <= 8:
-            period = "藻类生长期（6-8月）"
-        else:
-            period = "爆发期（9-11月）"
-        result["监测时段"] = period
+            if 3 <= month_num <= 5:
+                period = "平水期（3-5月）"
+            elif 6 <= month_num <= 8:
+                period = "藻类生长期（6-8月）"
+            else:
+                period = "爆发期（9-11月）"
+            result["监测时段"] = period
 
-    # --- 自动添加采样日期 ---
-    if result["采样日期"].isna().all():
-        result["采样日期"] = "2026-05-15"
+        # --- 自动添加采样日期 ---
+        if result["采样日期"].isna().all():
+            if month_label:
+                m = re.search(r'(\d+)', month_label)
+                if m:
+                    default_date = f"2026-{int(m.group(1)):02d}-15"
+                else:
+                    default_date = "2026-05-15"
+            else:
+                default_date = "2026-05-15"
+            result["采样日期"] = default_date
+
+        all_results.append(result)
+
+    # =========================================================================
+    # 合并所有段的结果
+    # =========================================================================
+
+    if not all_results:
+        raise ValueError("所有数据段处理后均为空，请检查数据内容。")
+
+    result = pd.concat(all_results, ignore_index=True)
 
     # --- 重新排序列 ---
     preferred_order = [
@@ -1265,15 +1707,34 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     remaining = [c for c in result.columns if c not in final_cols]
     result = result[final_cols + remaining]
 
-    # --- 汇总报告 ---
+    # =========================================================================
+    # 汇总报告
+    # =========================================================================
+
     print(f"  [信息] 智能导入完成：{len(result)} 条记录，{len(result.columns)} 个字段。")
-    print(f"         识别格式：{detected_format}")
+    print(f"         识别格式：{detected_format}"
+          f"{'（多段合并）' if is_multi_section else ''}")
+
+    # 湖泊分布
+    lake_counts = result["湖泊名称"].value_counts()
+    lake_summary = "、".join([f"{lk}({cnt})" for lk, cnt in lake_counts.items()])
+    print(f"         水体分布：{lake_summary}")
+
+    # 监测时段分布
+    period_counts = result["监测时段"].value_counts()
+    period_summary = "、".join([f"{p}({c})" for p, c in period_counts.items()])
+    print(f"         监测时段：{period_summary}")
+
+    # 嗅味数据检测
     has_odor = not (result["GSM"].isna().all() and result["2-MIB"].isna().all())
     if not has_odor:
         print("  [提示] 未检测到 GSM/2-MIB 数据，嗅味风险预警模块将不可用。")
         print("         其他分析（可视化、相关性、回归）可正常运行。")
     else:
-        print("  [信息] 已检测到嗅味物质数据，全部分析模块可用。")
+        gsm_count = result["GSM"].notna().sum()
+        mib_count = result["2-MIB"].notna().sum()
+        print(f"  [信息] 已检测到嗅味物质数据：GSM {gsm_count} 条、2-MIB {mib_count} 条。"
+              f"全部分析模块可用。")
 
     return result
 

@@ -652,26 +652,20 @@ def render_data_import_page() -> None:
             '<div class="info-box">'
             '<b>支持的文件格式：</b>'
             'CSV（逗号分隔）、TSV/TXT/DAT（制表符分隔）、Excel（.xlsx/.xls）、JSON'
-            '<br><b>自动识别：</b>编码、分隔符、列名映射、叶绿素单位转换（mg/L → μg/L）'
+            '<br><b>自动识别：</b>编码、分隔符、多段数据拆分、低于检出限(＜)解析、'
+            '度分秒坐标转换、列名智能映射、点位→湖泊自动归属'
             '</div>',
             unsafe_allow_html=True,
         )
 
-        col_up, col_lake = st.columns([3, 1])
-        with col_up:
-            uploaded_file = st.file_uploader(
-                "拖拽或点击选择数据文件",
-                type=None,  # 不限制扩展名
-                accept_multiple_files=False,
-                help="支持 CSV / TSV / TXT / DAT / Excel / JSON 等，由内容自动识别格式。",
-                label_visibility="collapsed",
-            )
-        with col_lake:
-            lake_name_input = st.text_input(
-                "湖泊名称",
-                value="太湖",
-                help="若数据中不含湖泊名，将以此名称标注。",
-            )
+        uploaded_file = st.file_uploader(
+            "拖拽或点击选择数据文件",
+            type=None,  # 不限制扩展名
+            accept_multiple_files=False,
+            help="支持 CSV / TSV / TXT / DAT / Excel / JSON 等，由内容自动识别格式。"
+                 "系统将自动识别各监测点位所属的湖泊/水库。",
+            label_visibility="collapsed",
+        )
 
         if uploaded_file is not None:
             try:
@@ -680,8 +674,8 @@ def render_data_import_page() -> None:
                 with open(tmp_path, "wb") as f:
                     f.write(uploaded_file.getbuffer())
 
-                # 万能智能导入
-                df = smart_import(tmp_path, lake_name=lake_name_input)
+                # 万能智能导入（湖泊名称自动识别）
+                df = smart_import(tmp_path)
                 os.remove(tmp_path)
 
                 st.session_state["main_dataset"] = df
