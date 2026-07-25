@@ -59,7 +59,8 @@ def _setup_chinese_font() -> str:
         name = font.name
         for kw in cjk_keywords:
             if kw.lower() in name.lower():
-                plt.rcParams["font.sans-serif"] = [name]
+                plt.rcParams["font.family"] = "sans-serif"
+                plt.rcParams["font.sans-serif"] = [name, "sans-serif"]
                 print(f"  [信息] 已启用中文字体：{name}（来源：{font.fname}）")
                 return name
 
@@ -94,10 +95,10 @@ def _setup_chinese_font() -> str:
     for path in _candidate_paths:
         if os.path.exists(path):
             fontManager.addfont(path)
-            # 获取字体名称
             fp = FontProperties(fname=path)
             name = fp.get_name()
-            plt.rcParams["font.sans-serif"] = [name]
+            plt.rcParams["font.family"] = "sans-serif"
+            plt.rcParams["font.sans-serif"] = [name, "sans-serif"]
             print(f"  [信息] 已启用中文字体：{name}（路径：{path}）")
             return name
 
@@ -105,38 +106,67 @@ def _setup_chinese_font() -> str:
     if sys.platform != "win32" and sys.platform != "darwin":
         try:
             import urllib.request
+            import shutil
+            import glob as _glob
+
             font_dir = os.path.expanduser("~/.fonts")
             os.makedirs(font_dir, exist_ok=True)
             font_path = os.path.join(font_dir, "NotoSansSC-Regular.ttf")
+
             if not os.path.exists(font_path):
-                # 使用多个备用 URL
+                # 使用多个备用 URL（TTF 格式，兼容性最好）
                 urls = [
-                    "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
-                    "https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/OTF/SimplifiedChinese/NotoSansSC-Regular.otf",
+                    "https://github.com/google/fonts/raw/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+                    "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+                    "https://cdn.jsdelivr.net/gh/AimeeMao/Fonts@main/NotoSansSC/NotoSansSC-Regular.ttf",
                 ]
                 downloaded = False
                 for url in urls:
                     try:
-                        print(f"  [信息] 正在下载中文字体...")
+                        print("  [信息] 正在下载中文字体...")
                         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-                        with urllib.request.urlopen(req, timeout=30) as resp:
+                        with urllib.request.urlopen(req, timeout=60) as resp:
                             with open(font_path, "wb") as f:
                                 f.write(resp.read())
-                        downloaded = True
-                        break
+                        # 验证文件大小（至少 1MB 才算有效字体）
+                        if os.path.getsize(font_path) > 100000:
+                            downloaded = True
+                            break
+                        else:
+                            os.remove(font_path)
                     except Exception:
                         continue
                 if not downloaded:
-                    raise RuntimeError("所有下载源均不可用")
-                print(f"  [信息] 字体已下载至：{font_path}")
+                    raise RuntimeError("所有字体下载源均不可用")
+                print(f"  [信息] 字体已下载至：{font_path}（{os.path.getsize(font_path) / 1024:.0f} KB）")
+
+            # --- 注册字体并强制刷新缓存 ---
             fontManager.addfont(font_path)
+
+            # 清除 matplotlib 字体缓存，强制重新扫描
+            try:
+                cache_dir = matplotlib.get_cachedir()
+                for cache_file in _glob.glob(os.path.join(cache_dir, "fontlist*.json")):
+                    os.remove(cache_file)
+            except Exception:
+                pass
+
+            # 重新加载字体列表
+            try:
+                fontManager.__init__()
+            except Exception:
+                pass
+
+            # 获取字体名称并设置
             fp = FontProperties(fname=font_path)
             name = fp.get_name()
-            plt.rcParams["font.sans-serif"] = [name]
+            plt.rcParams["font.family"] = "sans-serif"
+            plt.rcParams["font.sans-serif"] = [name, "sans-serif"]
+            plt.rcParams["axes.unicode_minus"] = False
             print(f"  [信息] 已启用中文字体：{name}")
             return name
         except Exception as e:
-            print(f"  [警告] 字体下载失败：{e}")
+            print(f"  [警告] 字体下载/注册失败：{e}")
 
     # -- 全部失败---
     print(
