@@ -1110,6 +1110,31 @@ _ODOR_LEVEL_COLORS: dict = {
     "未知":     "#9aa5b1",
 }
 
+# CartoDB Voyager 彩色简洁底图（Mapbox GL 样式）：彩色但无详细行政区划/地形标注，
+# 避免底图过细盖住采样点位气泡。免费瓦片、无需 token。
+_MAPBOX_VOYAGER_STYLE: dict = {
+    "version": 8,
+    "sources": {
+        "carto-voyager": {
+            "type": "raster",
+            "tiles": [
+                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+            ],
+            "tileSize": 256,
+            "attribution": "© OpenStreetMap contributors © CARTO",
+        }
+    },
+    "layers": [
+        {
+            "id": "carto-voyager-layer",
+            "type": "raster",
+            "source": "carto-voyager",
+            "minzoom": 0,
+            "maxzoom": 22,
+        }
+    ],
+}
+
 
 def _classify_odor_level(value: Optional[float]) -> str:
     """
@@ -1249,7 +1274,7 @@ def plot_gis_map(
     - 颜色分级：正常（<10，绿）、轻度（10~50，黄）、严重（>50，红）。
     - 悬浮弹窗展示该点位的理化指标均值。
 
-    优先使用 plotly.express.scatter_mapbox（免费 open-street-map 彩色底图，无需 token）；
+    优先使用 plotly.express.scatter_mapbox（免费 CartoDB Voyager 彩色简洁底图，无需 token）；
     若未安装 plotly，则回退为 matplotlib 散点图。
 
     参数
@@ -1315,10 +1340,12 @@ def plot_gis_map(
             },
             zoom=zoom,
             center={"lat": center[0], "lon": center[1]},
-            mapbox_style="open-street-map",
+            mapbox_style="white-bg",
             title=title,
             category_orders={"风险等级": ["正常", "轻度超标", "严重超标", "未知"]},
         )
+        # 用 CartoDB Voyager 彩色简洁底图覆盖默认底图（彩色但无详细行政区划/地形）
+        fig.update_layout(mapbox=dict(style=_MAPBOX_VOYAGER_STYLE))
         fig.update_layout(
             margin={"r": 0, "t": 60, "l": 0, "b": 0},
             legend=dict(
