@@ -58,8 +58,6 @@ from data_mock import (
 from process_data import (
     load_dataset_from_csv,
     load_dataset_from_excel,
-    clean_dataset,
-    fill_missing_values,
     filter_by_lake,
     filter_by_period,
     aggregate_by_group,
@@ -73,6 +71,9 @@ from visualize import (
     plot_scatter_with_regression,
     plot_multi_panel_dashboard,
     plot_bar_comparison,
+    plot_gis_map,
+    plot_dual_axis,
+    is_plotly_figure,
     save_figure,
 )
 from model import (
@@ -96,10 +97,6 @@ def init_session_state() -> None:
     # 初始化主数据集
     if "main_dataset" not in st.session_state:
         st.session_state["main_dataset"] = None
-
-    # 初始化清洗后的数据集
-    if "cleaned_dataset" not in st.session_state:
-        st.session_state["cleaned_dataset"] = None
 
     # 初始化模型训练结果
     if "trained_model" not in st.session_state:
@@ -433,7 +430,7 @@ def render_home_page() -> None:
     st.markdown('<div class="module-title">数据概览</div>', unsafe_allow_html=True)
 
     df = st.session_state.get("main_dataset")
-    cleaned = st.session_state.get("cleaned_dataset")
+    cleaned = st.session_state.get("main_dataset")
 
     if df is not None:
         # 有数据时展示实时统计
@@ -496,15 +493,15 @@ def render_home_page() -> None:
                     f'<div class="stat-label">{label}</div></div>',
                     unsafe_allow_html=True,
                 )
-        st.caption("尚未导入数据。请通过左侧导航进入「数据导入与清洗」上传您的监测数据。")
+        st.caption("尚未导入数据。请通过左侧导航进入「数据导入」上传您的监测数据。")
 
     # --- 功能模块 ---
     st.markdown('<div class="module-title">核心功能</div>', unsafe_allow_html=True)
 
     modules = [
         {
-            "name": "数据导入与清洗",
-            "desc": "多格式自动识别 · 异常值检测<br>缺失填补 · 列名智能映射",
+            "name": "数据导入",
+            "desc": "多格式自动识别 · 列名智能映射<br>转置格式检测 · 数据验证",
         },
         {
             "name": "时空特征可视化",
@@ -534,7 +531,7 @@ def render_home_page() -> None:
     # --- 分析工作流 ---
     st.markdown('<div class="module-title">分析流程</div>', unsafe_allow_html=True)
 
-    steps = ["数据导入", "清洗预处理", "特征可视化", "因子建模", "风险预警"]
+    steps = ["数据导入", "数据验证", "特征可视化", "因子建模", "风险预警"]
     workflow_html = (
         '<div style="display:flex;justify-content:center;align-items:center;'
         'flex-wrap:wrap;gap:10px;padding:20px 0;">'
@@ -584,15 +581,15 @@ def render_home_page() -> None:
 
 
 # ============================================================================
-# 页面：数据导入与清洗
+# 页面：数据导入
 # ============================================================================
 
 def render_data_import_page() -> None:
     """
-    渲染数据导入与清洗页面。
+    渲染数据导入页面。
     """
     st.markdown(
-        '<div class="main-title">数据导入与清洗</div>',
+        '<div class="main-title">数据导入</div>',
         unsafe_allow_html=True,
     )
 
@@ -752,76 +749,63 @@ def render_data_import_page() -> None:
                     use_container_width=True,
                 )
 
-        # --- 数据清洗 ---
-        st.markdown('<div class="module-title">步骤三：数据清洗</div>', unsafe_allow_html=True)
+        # --- 数据验证与概览 ---
+        st.markdown('<div class="module-title">步骤三：数据验证</div>', unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            outlier_method = st.selectbox(
-                "异常值检测方法",
-                options=["iqr", "range"],
-                format_func=lambda x: "四分位距法（IQR）" if x == "iqr" else "合理范围法",
-                help="IQR 法基于数据分布检测异常；合理范围法基于水环境科学常识判定。",
-            )
-        with col2:
-            iqr_mult = st.slider(
-                "IQR 倍数系数",
-                min_value=1.0,
-                max_value=5.0,
-                value=3.0,
-                step=0.5,
-                help="系数越大越宽松（检出异常值越少）。1.5=标准箱线图，3.0=仅极端值。",
-            )
-        with col3:
-            fill_strategy = st.selectbox(
-                "缺失值填补策略",
-                options=["mean", "median", "ffill", "bfill", "interpolate"],
-                format_func=lambda x: {
-                    "mean": "均值填补",
-                    "median": "中位数填补",
-                    "ffill": "向前填充",
-                    "bfill": "向后填充",
-                    "interpolate": "线性插值",
-                }.get(x, x),
-            )
+        st.markdown(
+            '<div class="info-box">'
+            '<b>实测数据说明：</b>所有数据均为现场实测值，系统不会对原始数据进行任何修改、'
+            '剔除或填补操作。以下展示各项指标的数据完整度，供您了解数据质量状况。'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
-        if st.button("🧹 执行数据清洗", type="primary", use_container_width=True):
-            with st.spinner("正在清洗数据..."):
-                cleaned_df = clean_dataset(
-                    df,
-                    method=outlier_method,
-                    iqr_multiplier=iqr_mult,
-                    remove_outliers=True,
-                )
-                cleaned_df = fill_missing_values(
-                    cleaned_df,
-                    strategy=fill_strategy,
-                )
-                st.session_state["cleaned_dataset"] = cleaned_df
+        # 缺失值概览
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        missing_info = []
+        for col in numeric_cols:
+            n_miss = int(df[col].isna().sum())
+            n_total = len(df)
+            pct = n_miss / n_total * 100 if n_total > 0 else 0
+            missing_info.append({
+                "指标": col,
+                "有效值": n_total - n_miss,
+                "缺失值": n_miss,
+                "完整率": f"{100 - pct:.1f}%",
+            })
+        # 也检查文本列
+        for col in df.columns:
+            if col not in numeric_cols:
+                n_miss = int(df[col].isna().sum())
+                n_total = len(df)
+                pct = n_miss / n_total * 100 if n_total > 0 else 0
+                missing_info.append({
+                    "指标": col,
+                    "有效值": n_total - n_miss,
+                    "缺失值": n_miss,
+                    "完整率": f"{100 - pct:.1f}%",
+                })
 
-            st.markdown(
-                f'<div class="success-box">✅ <b>数据清洗完成！</b> '
-                f'清洗后共 <b>{len(cleaned_df)}</b> 条有效记录。</div>',
-                unsafe_allow_html=True,
+        if missing_info:
+            st.markdown("**各字段数据完整度：**")
+            st.dataframe(
+                pd.DataFrame(missing_info).sort_values("完整率"),
+                use_container_width=True,
+                hide_index=True,
             )
-
-            # 清洗前后对比
-            st.markdown("**清洗后数据预览（前 10 行）：**")
-            st.dataframe(cleaned_df.head(10), use_container_width=True)
 
         # --- 数据导出 ---
-        if st.session_state["cleaned_dataset"] is not None:
-            st.markdown('<div class="module-title">步骤四：导出清洗后数据</div>', unsafe_allow_html=True)
-            export_name = st.text_input("导出文件名", value="cleaned_water_quality_data.csv")
-            if st.button("💾 导出为 CSV 文件"):
-                export_path = export_dataset_to_csv(
-                    st.session_state["cleaned_dataset"],
-                    export_name,
-                )
-                st.markdown(
-                    f'<div class="success-box">✅ 数据已导出至：<code>{export_path}</code></div>',
-                    unsafe_allow_html=True,
-                )
+        st.markdown('<div class="module-title">步骤四：导出数据</div>', unsafe_allow_html=True)
+        export_name = st.text_input("导出文件名", value="water_quality_data.csv")
+        if st.button("💾 导出为 CSV 文件"):
+            export_path = export_dataset_to_csv(
+                df,
+                export_name,
+            )
+            st.markdown(
+                f'<div class="success-box">✅ 数据已导出至：<code>{export_path}</code></div>',
+                unsafe_allow_html=True,
+            )
 
 
 # ============================================================================
@@ -838,14 +822,12 @@ def render_visualization_page() -> None:
     )
 
     # 检查是否有可用数据
-    df = st.session_state.get("cleaned_dataset")
-    if df is None:
-        df = st.session_state.get("main_dataset")
+    df = st.session_state.get("main_dataset")
 
     if df is None:
         st.markdown(
             '<div class="warning-box">⚠️ <b>暂无可用数据。</b>'
-            '请先在「数据导入与清洗」页面导入或生成数据。</div>',
+            '请先在「数据导入」页面导入或生成数据。</div>',
             unsafe_allow_html=True,
         )
         return
@@ -903,12 +885,14 @@ def render_visualization_page() -> None:
     viz_type = st.selectbox(
         "请选择可视化类型：",
         options=[
+            "GIS 空间分布地图",
             "时间变化趋势折线图",
             "分组箱线图对比",
             "相关性热力图",
             "散点拟合关系图",
             "多面板驱动因子分析",
             "柱状图对比",
+            "双 Y 轴对比图",
         ],
     )
 
@@ -982,12 +966,59 @@ def render_visualization_page() -> None:
             title=f"各{x_choice} {y_variable} 平均浓度对比",
         )
 
-    # --- 显示图表 ---
-    if fig is not None:
-        st.pyplot(fig)
+    elif viz_type == "GIS 空间分布地图":
+        odor_options = [c for c in ["2-MIB", "GSM"] if c in filtered_df.columns and not filtered_df[c].isna().all()]
+        if not odor_options:
+            st.warning("⚠️ 当前数据中无嗅味物质（2-MIB / GSM）数据，无法按嗅味浓度着色。")
+        else:
+            odor_col = st.selectbox(
+                "嗅味指标（用于气泡大小与颜色分级）",
+                options=odor_options,
+                index=0,
+            )
+            try:
+                fig = plot_gis_map(
+                    filtered_df,
+                    odor_col=odor_col,
+                    title=f"长三角湖库采样断面空间分布与嗅味风险（{odor_col}）",
+                )
+            except ValueError as e:
+                st.warning(f"⚠️ {e}")
+                fig = None
 
-    # --- 图表导出 ---
+    elif viz_type == "双 Y 轴对比图":
+        non_odor_numeric = [c for c in all_numeric if c not in {"GSM", "2-MIB"}]
+        left_options = non_odor_numeric or all_numeric
+        right_options = all_numeric
+        default_left = "水温" if "水温" in left_options else (left_options[0] if left_options else None)
+        default_right = y_variable if y_variable in right_options else (right_options[0] if right_options else None)
+        left_col = st.selectbox(
+            "左 Y 轴指标（如水温 / 总氮）",
+            options=left_options,
+            index=left_options.index(default_left) if default_left in left_options else 0,
+        )
+        right_col = st.selectbox(
+            "右 Y 轴指标（如 2-MIB / 土臭素）",
+            options=right_options,
+            index=right_options.index(default_right) if default_right in right_options else 0,
+        )
+        x_choice = st.selectbox("X 轴变量", options=["监测时段", "湖泊名称"])
+        fig = plot_dual_axis(
+            filtered_df,
+            x_col=x_choice,
+            left_col=left_col,
+            right_col=right_col,
+        )
+
+    # --- 显示图表（plotly 与 matplotlib 分流） ---
     if fig is not None:
+        if is_plotly_figure(fig):
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.pyplot(fig)
+
+    # --- 图表导出（仅 matplotlib 图支持保存为高清 PNG；plotly 图可用右上角工具栏导出） ---
+    if fig is not None and not is_plotly_figure(fig):
         save_name = st.text_input("图表保存文件名", value=f"{viz_type}.png")
         if st.button("💾 保存图表为高清图片"):
             save_path = save_figure(fig, save_name, dpi=300)
@@ -1010,14 +1041,12 @@ def render_analysis_page() -> None:
         unsafe_allow_html=True,
     )
 
-    df = st.session_state.get("cleaned_dataset")
-    if df is None:
-        df = st.session_state.get("main_dataset")
+    df = st.session_state.get("main_dataset")
 
     if df is None:
         st.markdown(
             '<div class="warning-box">⚠️ <b>暂无可用数据。</b>'
-            '请先在「数据导入与清洗」页面导入或生成数据。</div>',
+            '请先在「数据导入」页面导入或生成数据。</div>',
             unsafe_allow_html=True,
         )
         return
@@ -1261,9 +1290,7 @@ def render_risk_warning_page() -> None:
         unsafe_allow_html=True,
     )
 
-    df = st.session_state.get("cleaned_dataset")
-    if df is None:
-        df = st.session_state.get("main_dataset")
+    df = st.session_state.get("main_dataset")
 
     # 检查是否有嗅味物质数据
     has_odor_data = False
@@ -1274,7 +1301,7 @@ def render_risk_warning_page() -> None:
 
     if df is None:
         st.markdown(
-            '<div class="warning-box">请先在「数据导入与清洗」页面导入或生成数据。</div>',
+            '<div class="warning-box">请先在「数据导入」页面导入或生成数据。</div>',
             unsafe_allow_html=True,
         )
         return
@@ -1526,7 +1553,7 @@ def main() -> None:
             "导航",
             options=[
                 "系统首页",
-                "数据导入与清洗",
+                "数据导入",
                 "时空特征可视化",
                 "驱动因子分析",
                 "风险预警评估",
@@ -1557,7 +1584,7 @@ def main() -> None:
     # --- 根据导航选择渲染对应页面 ---
     if page == "系统首页":
         render_home_page()
-    elif page == "数据导入与清洗":
+    elif page == "数据导入":
         render_data_import_page()
     elif page == "时空特征可视化":
         render_visualization_page()

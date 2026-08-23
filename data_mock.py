@@ -72,6 +72,18 @@ LAKE_TROPHIC_LEVEL: dict = {
     "潜明水库": "中营养",
 }
 
+# 各湖泊中心经纬度（十进制，近似值），用于在地图上定位采样点
+LAKE_COORDS: dict = {
+    "千岛湖":   (29.60, 119.02),
+    "太湖":     (31.20, 120.10),
+    "长荡湖":   (31.55, 119.50),
+    "巢湖":     (31.60, 117.60),
+    "淀山湖":   (31.10, 120.93),
+    "玄武湖":   (32.07, 118.79),
+    "南湖":     (30.76, 120.77),
+    "潜明水库": (28.70, 120.20),
+}
+
 
 def validate_lake_name(lake_name: str) -> bool:
     """
@@ -749,7 +761,7 @@ def generate_full_mock_dataset(
     生成完整的模拟监测数据集，覆盖五大湖泊、三个监测时段、各三个点位。
 
     数据集包含以下字段：
-    - 基本信息：湖泊名称、采样点位、监测时段、采样日期
+    - 基本信息：湖泊名称、采样点位、监测时段、采样日期、经度、纬度
     - 常规理化指标：水温(℃)、pH、DO(mg/L)、浊度(NTU)
     - 营养盐指标：TN(mg/L)、TP(mg/L)、NH3-N(mg/L)、CODMn(mg/L)
     - 生物学指标：叶绿素a(μg/L)
@@ -843,6 +855,12 @@ def generate_full_mock_dataset(
                     period, lake_name, samples_per_period
                 )
 
+                # 计算该点位的经纬度（湖泊中心 + 点位间轻微偏移，避免重叠）
+                base_lat, base_lon = LAKE_COORDS.get(lake_name, (30.0, 120.0))
+                point_idx = SAMPLING_POINTS[lake_name].index(point)
+                lat: float = base_lat + (point_idx - 1) * 0.015
+                lon: float = base_lon + (point_idx - 1) * 0.015
+
                 # 逐条组装记录
                 for i in range(samples_per_period):
                     # 随机分配月份和日期
@@ -869,6 +887,8 @@ def generate_full_mock_dataset(
                         "叶绿素a": chla_values[i],
                         "GSM":     odorant_df.loc[i, "GSM_ng_L"],
                         "2-MIB":   odorant_df.loc[i, "2-MIB_ng_L"],
+                        "经度":    lon,
+                        "纬度":    lat,
                     }
                     all_records.append(record)
 

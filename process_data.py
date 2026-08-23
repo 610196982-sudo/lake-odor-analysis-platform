@@ -782,17 +782,24 @@ COLUMN_NAME_MAP: dict = {
     # 溶解氧（含括号内英文缩写变体）
     "溶解氧（mg/L）": "DO",
     "溶解氧(mg/L)": "DO",
+    "溶解氧（mg/L)": "DO",
+    "溶解氧(mg/L)": "DO",
     "溶解氧（DO）（mg/L）": "DO",
+    "溶解氧（DO）（mg/L)": "DO",
     "溶解氧(DO)(mg/L)": "DO",
     "溶解氧": "DO",
     "DO(mg/L)": "DO",
     "DO（mg/L）": "DO",
+    "DO（mg/L)": "DO",
     "DO": "DO",
     # pH
     "pH": "pH",
     "PH": "pH",
     "ph": "pH",
     "Ph": "pH",
+    # pH — 半角括号变体
+    "pH（mg/L）": "pH",
+    "pH(mg/L)": "pH",
     # 浊度
     "浊度（NTU）": "浊度",
     "浊度(NTU)": "浊度",
@@ -833,6 +840,11 @@ COLUMN_NAME_MAP: dict = {
     "高锰酸盐指数": "CODMn",
     "CODMn": "CODMn",
     "COD_Mn": "CODMn",
+    # CODmn 半角括号 & 大小写变体
+    "CODmn（mg/L）": "CODMn",
+    "CODmn(mg/L)": "CODMn",
+    "CODmn": "CODMn",
+    "CODMN": "CODMn",
     # 叶绿素（扩展映射）
     "叶绿素（mg/L）": "叶绿素a_raw_mgL",
     "叶绿素(mg/L)": "叶绿素a_raw_mgL",
@@ -865,6 +877,9 @@ COLUMN_NAME_MAP: dict = {
     "温度(℃)": "水温",
     "温度": "水温",
     "WT": "水温",
+    "WT（℃）": "水温",
+    "WT(℃)": "水温",
+    "Temp": "水温",
     # GSM / 2-MIB（扩展映射，覆盖更多写法）
     "GSM（ng/L）": "GSM",
     "GSM(ng/L)": "GSM",
@@ -872,6 +887,8 @@ COLUMN_NAME_MAP: dict = {
     "土臭素（ng/L）": "GSM",
     "土臭素(ng/L)": "GSM",
     "土臭素": "GSM",
+    "土臭素（ng/L)": "GSM",
+    "土臭素(ng/L)": "GSM",
     "geosmin": "GSM",
     "Geosmin": "GSM",
     "2-MIB（ng/L）": "2-MIB",
@@ -884,6 +901,7 @@ COLUMN_NAME_MAP: dict = {
     "2-甲基异莰醇": "2-MIB",
     "2-甲基异莰醇（ng/L）": "2-MIB",
     "2-甲基异莰醇(ng/L)": "2-MIB",
+    "2-甲基异莰醇（ng/L)": "2-MIB",
     "MIB": "2-MIB",
     "MIB（ng/L）": "2-MIB",
     "MIB(ng/L)": "2-MIB",
@@ -895,6 +913,7 @@ COLUMN_NAME_MAP: dict = {
     "采样点位": "采样点位",
     "监测点": "采样点位",
     "站点名称": "采样点位",
+    "点位名称": "采样点位",
     "点位（5月）": "采样点位",
     "点位（6月）": "采样点位",
     "点位（3月）": "采样点位",
@@ -919,6 +938,8 @@ COLUMN_NAME_MAP: dict = {
     "电导率（ms/cm）": "电导率",
     "电导率(ms/cm)": "电导率",
     "电导率（μS/cm）": "电导率",
+    "电导率(μS/cm)": "电导率",
+    "电导率（μS/cm)" : "电导率",
     "电导率（SPC）（ms/cm）": "电导率",
     "电导率(SPC)(ms/cm)": "电导率",
     "电导率（SPC）": "电导率",
@@ -927,6 +948,11 @@ COLUMN_NAME_MAP: dict = {
     "电导率": "电导率",
     "Cond": "电导率",
     "电导率（μs/cm）": "电导率",
+    "电导率(μs/cm)": "电导率",
+    "电导率（SPC）（us/cm）": "电导率",
+    "电导率(SPC)(us/cm)": "电导率",
+    "电导率（us/cm）": "电导率",
+    "电导率(us/cm)": "电导率",
     # 氧化还原电位
     "氧化还原电位（mV）": "氧化还原电位",
     "氧化还原电位(mV)": "氧化还原电位",
@@ -942,6 +968,8 @@ COLUMN_NAME_MAP: dict = {
     "藻密度(万个/L)": "藻密度",
     "藻密度": "藻密度",
     "藻细胞密度": "藻密度",
+    "藻细胞密度（万个/L）": "藻密度",
+    "藻细胞密度(万个/L)": "藻密度",
     # 水温（更多变体）
     "WT（℃）": "水温",
     "WT(℃)": "水温",
@@ -987,6 +1015,251 @@ COLUMN_NAME_MAP: dict = {
     # 月份标注列（如 "点位（5月）" → 用于推断监测时段）
     # 这些列在 smart_import 内部会被特殊处理，此处仅保留占位
 }
+
+
+# ============================================================================
+# 转置格式参数映射表
+# ============================================================================
+
+# 用于 transposed 格式（参数在行、采样点在列）的参数名→标准名映射
+TRANSPOSED_PARAM_MAP: dict = {
+    "温度":      "水温",
+    "Kpa":       "压力",
+    "DO %":      "DO饱和度",
+    "DO mg/L":   "DO",
+    "DO %RTB":   "DO饱和度RTB",
+    "SPC":       "电导率",
+    "SAL":       "盐度",
+    "pH":        "pH",
+    "ORF  mV":   "氧化还原电位",
+    "NTU":       "浊度",
+    "TSS mg/L":  "TSS",
+    "PC ug/L":   "PC",
+    "chl ug/L":  "叶绿素a",
+    "fDOM QSU":  "fDOM",
+    "fDOM ppd":  "fDOM_ppd",
+    "DEP m":     "DEP",
+    "ALT m":     "ALT",
+}
+
+
+# ============================================================================
+# 转置格式检测与转换
+# ============================================================================
+
+def _detect_transposed_format(df: pd.DataFrame) -> bool:
+    """
+    检测 DataFrame 是否为「转置格式」：参数名在行首列，采样点/湖泊在列标题。
+
+    特征：
+    - 首列为 Unnamed / 空名
+    - 其他列标题含"湖"/"水库"等水体名
+    - 首列值含 ≥3 个已知参数关键词（温度、DO、pH、SPC、NTU 等）
+    - 列数 ≤ 4 且行数 > 列数（窄高形状）
+
+    参数
+    ----
+    df : pd.DataFrame
+        原始读取的 DataFrame。
+
+    返回
+    ----
+    bool
+        True 表示检测到转置格式。
+    """
+    if df.empty or len(df.columns) < 2 or len(df.columns) > 4:
+        return False
+    if len(df) <= len(df.columns):
+        return False  # 行少列多 → 不是转置
+
+    # 首列检查
+    col0 = str(df.columns[0])
+    if not (col0.startswith("Unnamed") or col0 == "" or col0 == "nan"):
+        return False
+
+    # 其他列标题是否包含水体标识
+    other_headers = [str(c).strip() for c in df.columns[1:]]
+    has_lake = any("湖" in h or "水库" in h for h in other_headers)
+    if not has_lake:
+        return False
+
+    # 首列值是否包含参数关键词
+    param_indicators = [
+        "温度", "DO", "pH", "Kpa", "SPC", "SAL", "NTU",
+        "TSS", "PC", "chl", "fDOM", "DEP", "ALT", "ORF",
+        "°C", "℃",
+    ]
+    first_col_vals = [str(v).strip() for v in df.iloc[:, 0] if pd.notna(v)]
+    matches = sum(
+        1 for v in first_col_vals
+        if any(indicator in v for indicator in param_indicators)
+    )
+    return matches >= 3
+
+
+def _transform_transposed(
+    df: pd.DataFrame,
+    file_path: str = "",
+) -> pd.DataFrame:
+    """
+    将转置格式的 DataFrame 转换为标准格式（每行=一个采样点）。
+
+    转换逻辑：
+    1. 首列值作为参数名，列标题（第 2..N 列）作为湖泊/点位名
+    2. 转置后每个湖泊一行，各参数为列
+    3. 末尾 2 行可能含坐标（度分秒格式），自动提取并转换为十进制度
+    4. 参数名通过 TRANSPOSED_PARAM_MAP 映射到标准名
+
+    参数
+    ----
+    df : pd.DataFrame
+        转置格式的原始 DataFrame。
+    file_path : str
+        文件路径，用于日志输出。
+
+    返回
+    ----
+    pd.DataFrame
+        标准化后的 DataFrame。
+    """
+    import re
+
+    n_cols = len(df.columns)
+    lake_names = [str(c).strip() for c in df.columns[1:]]
+
+    # --- 提取坐标行 ---
+    lat_values: dict = {}   # lake_name → decimal latitude
+    lon_values: dict = {}   # lake_name → decimal longitude
+
+    # 扫描最后几行，查找坐标行
+    # 坐标行的特征：行标签为 E/N/NTU，且值包含度分秒格式（如 "119度33分"）
+    coord_candidates = {}  # row_idx → (coord_type, {lake: value}) or None if excluded
+    coord_rows_to_skip = set()  # 确定为坐标行，从数据行中排除
+
+    for i in range(max(0, len(df) - 5), len(df)):
+        first_val = str(df.iloc[i, 0]).strip() if pd.notna(df.iloc[i, 0]) else ""
+
+        # 检查该行的值是否像坐标（度分秒格式）
+        looks_like_coords = False
+        for j in range(1, n_cols):
+            v = df.iloc[i, j]
+            if pd.notna(v):
+                vs = str(v).strip()
+                if re.search(r'\d+度\d+分', vs):
+                    looks_like_coords = True
+                    break
+
+        if not looks_like_coords:
+            continue  # 不是坐标行，保留在数据中
+
+        coord_rows_to_skip.add(i)
+
+        if first_val in ("NTU", "N", "纬度", "Latitude"):
+            # 纬度行
+            vals = {}
+            for j, lake in enumerate(lake_names):
+                v = df.iloc[i, j + 1]
+                vals[lake] = v if pd.notna(v) else None
+            coord_candidates[i] = ("lat", vals)
+        elif first_val in ("E", "经度", "Longitude"):
+            # 经度行
+            vals = {}
+            for j, lake in enumerate(lake_names):
+                v = df.iloc[i, j + 1]
+                vals[lake] = v if pd.notna(v) else None
+            coord_candidates[i] = ("lon", vals)
+
+    # 解析坐标值
+    for idx, (c_type, vals) in coord_candidates.items():
+        for lake, raw_val in vals.items():
+            if raw_val is not None:
+                decimal = _parse_dms_to_decimal(str(raw_val))
+                if decimal is not None:
+                    if c_type == "lat":
+                        lat_values[lake] = decimal
+                    else:
+                        lon_values[lake] = decimal
+
+    # --- 构建数据区域（排除坐标行）---
+    data_rows = []
+    for i in range(len(df)):
+        if i in coord_rows_to_skip:
+            continue  # 坐标行，跳过
+        first_val = str(df.iloc[i, 0]).strip() if pd.notna(df.iloc[i, 0]) else ""
+        # 跳过空行
+        if first_val == "" or first_val == "nan":
+            continue
+        param_name = first_val
+        row_data = {"param": param_name}
+        for j, lake in enumerate(lake_names):
+            row_data[lake] = df.iloc[i, j + 1]
+        data_rows.append(row_data)
+
+    if not data_rows:
+        raise ValueError("转置格式转换后无有效数据行。")
+
+    # --- 转置：湖泊为行，参数为列 ---
+    result_rows = []
+    for lake in lake_names:
+        row = {"湖泊名称": lake, "采样点位": lake}
+        for dr in data_rows:
+            param_raw = dr["param"]
+            std_name = TRANSPOSED_PARAM_MAP.get(param_raw, param_raw)
+            val = dr.get(lake)
+            row[std_name] = val
+        # 添加坐标
+        if lake in lat_values:
+            row["纬度"] = lat_values[lake]
+        if lake in lon_values:
+            row["经度"] = lon_values[lake]
+        result_rows.append(row)
+
+    result = pd.DataFrame(result_rows)
+
+    # --- 过滤：移除几乎所有参数为空的湖泊行 ---
+    param_cols = [
+        c for c in result.columns
+        if c not in ("湖泊名称", "采样点位", "经度", "纬度")
+    ]
+    if param_cols:
+        result = result.dropna(subset=param_cols, how="all")
+
+    print(f"  [信息] 检测到转置格式（{len(lake_names)} 个采样点），已自动转换为标准格式。"
+          f" 结果：{len(result)} 行 × {len(result.columns)} 列。")
+
+    return result
+
+
+# ============================================================================
+# Excel 日期序列号转换
+# ============================================================================
+
+def _excel_serial_to_date(serial) -> Optional[str]:
+    """
+    将 Excel 日期序列号（如 46183）转换为日期字符串 'YYYY-MM-DD'。
+
+    参数
+    ----
+    serial : any
+        Excel 日期序列号或其字符串表示。
+
+    返回
+    ----
+    Optional[str]
+        日期字符串，无法转换则返回 None。
+    """
+    if serial is None:
+        return None
+    try:
+        s = float(serial)
+        # Excel 日期序列号的有效范围（约 1900-01-01 到 2100-12-31）
+        if s < 1 or s > 80000:
+            return None
+        base = datetime.datetime(1899, 12, 30)
+        dt = base + datetime.timedelta(days=int(s))
+        return dt.strftime("%Y-%m-%d")
+    except (ValueError, TypeError, OverflowError):
+        return None
 
 
 # ============================================================================
@@ -1042,6 +1315,19 @@ POINT_LAKE_MAP: dict = {
     "淀山湖-入湖口": "淀山湖",
     "淀山湖-湖心":   "淀山湖",
     "淀山湖-出湖口": "淀山湖",
+}
+
+# 8 个实测采样断面的基准坐标（十进制，(纬度, 经度)）。
+# 用途：① GIS 地图无实测坐标时的兜底定位；② 源数据坐标填错时的纠偏基准。
+POINT_COORDS: dict = {
+    "平台山":     (31.223943, 120.108188),   # 太湖（苏州水域）
+    "泽山":       (31.011452, 120.272031),   # 太湖
+    "十四号灯标": (31.060807, 120.155375),   # 太湖
+    "淀山湖中":   (31.117805, 120.964237),   # 淀山湖（上海青浦）
+    "玄武湖":     (32.066667, 118.783333),   # 玄武湖（南京）
+    "长荡湖":     (31.550000, 119.550000),   # 长荡湖（常州金坛）
+    "南湖中心":   (30.760000, 120.760000),   # 南湖（嘉兴）
+    "潜明水库":   (28.844975, 120.297794),   # 潜明水库（浙江缙云）
 }
 
 # 所有已知水体名称列表（动态从映射表提取 + 手动补充）
@@ -1126,6 +1412,82 @@ def _parse_below_detection(value) -> Optional[float]:
         return float(s)
     except ValueError:
         return None
+
+
+def _parse_scientific_notation(value) -> Optional[float]:
+    """
+    解析文本形式的科学计数法，还原为十进制浮点数。
+
+    Excel 中上标常被拍平为普通字符，导致出现如下写法：
+    - "1.09×103"  → 实际为 1.09×10³ = 1090.0
+    - "1.09×10^3" → 1090.0
+    - "1.09E3" / "1.09e+3" → 1090.0
+
+    参数
+    ----
+    value : any
+        原始值，可能是字符串、数值或 None。
+
+    返回
+    ----
+    Optional[float]
+        解析后的浮点数，无法解析则返回 None。
+    """
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and np.isnan(value):
+            return None
+        return float(value)
+
+    s = str(value).strip()
+    if s == "":
+        return None
+
+    import re
+
+    # 1) 标准科学计数法：1.09E3 / 1.09e+3 / 1.09e-3
+    m = re.fullmatch(r'([+-]?\d+(?:\.\d+)?)[eE]([+-]?\d+)', s)
+    if m:
+        return float(m.group(1)) * (10.0 ** int(m.group(2)))
+
+    # 2) 乘号形式：1.09×10^3 / 1.09x10³ / 1.09×103（上标被拍平为普通数字）
+    # 支持普通数字指数与 Unicode 上标数字（⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺）
+    _superscript_trans = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺", "0123456789-+")
+    m = re.fullmatch(
+        r'([+-]?\d+(?:\.\d+)?)\s*[×xX*]\s*10\s*(?:\^?\s*)([0-9⁰¹²³⁴⁵⁶⁷⁸⁹⁻⁺+-]+)',
+        s,
+    )
+    if m:
+        exp_str = m.group(2).translate(_superscript_trans)
+        try:
+            return float(m.group(1)) * (10.0 ** int(exp_str))
+        except ValueError:
+            pass
+
+    return None
+
+
+def _parse_numeric_cell(value) -> Optional[float]:
+    """
+    统一解析数值单元格：低于检出限（＜）、科学计数法、普通数值。
+
+    优先尝试检出限解析（含普通数值），失败后尝试科学计数法解析。
+
+    参数
+    ----
+    value : any
+        原始单元格值。
+
+    返回
+    ----
+    Optional[float]
+        解析后的浮点数，无法解析则返回 None。
+    """
+    parsed = _parse_below_detection(value)
+    if parsed is not None:
+        return parsed
+    return _parse_scientific_notation(value)
 
 
 def _parse_dms_to_decimal(dms_str: str) -> Optional[float]:
@@ -1364,7 +1726,11 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     - 列名智能映射（100+ 种常见水质列名）
     - 多段 Excel 自动拆分（同一 Sheet 内含多个月份数据）
     - 低于检出限（＜）自动解析（MDL/2 替代法）
+    - 科学计数法文本解析（如"1.09×103" → 1090.0）
     - 度分秒坐标自动转换为十进制度
+    - 经纬度颠倒自动纠正（经度/纬度互检）
+    - 经纬度缺失沿用 5 月基准自动填补
+    - 坐标纠偏（点位坐标漂移超阈值时用基准坐标覆盖）
     - 点位→湖泊自动归属（POINT_LAKE_MAP）
     - 叶绿素单位转换（mg/L → μg/L）
     - 缺失字段补全
@@ -1434,6 +1800,18 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     print(f"  [信息] 识别格式: {detected_format}，共 {len(raw_df)} 行 × {len(raw_df.columns)} 列")
 
     # =========================================================================
+    # 转置格式检测（参数在行、采样点在列的特殊格式）
+    # =========================================================================
+    # 部分 Excel 文件（如长荡湖-玄武湖现场理化参数）采用转置格式：
+    # 首列是参数名，列标题是湖泊/点位名。需要先转换为标准格式。
+
+    is_transposed = _detect_transposed_format(raw_df)
+    if is_transposed:
+        raw_df = _transform_transposed(raw_df, file_path)
+        detected_format += "（转置→标准）"
+        print(f"  [信息] 转置转换后：共 {len(raw_df)} 行 × {len(raw_df.columns)} 列")
+
+    # =========================================================================
     # 多段 Excel 检测与拆分
     # =========================================================================
     # 检测是否为"多段式"数据：同一 Sheet 内包含多个独立表格，
@@ -1442,9 +1820,19 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     #
     # 采用双重检测策略（更鲁棒）：
     #   A. 扫描数据行首列，寻找"点位（X月）"样式的段表头
-    #   B. 以空行为辅助边界标记
+    #   B. 检测 "Unnamed: 0" 列中的月份标签（如"5月"、"6月"）
+    #   C. 以空行为辅助边界标记
 
     sections = []
+
+    # 检查是否第一个列为 "Unnamed: 0" 且包含月份标签
+    col0_name = str(raw_df.columns[0])
+    has_unnamed_month = (
+        col0_name.startswith("Unnamed") or col0_name == "" or col0_name == "nan"
+    ) and any(
+        bool(re.search(r'^\d+月$', str(v).strip()))
+        for v in raw_df.iloc[:, 0] if pd.notna(v)
+    )
 
     # 策略A：扫描所有行，寻找段表头标记
     # 先检查 raw_df.columns[0] 是否本身就是一个段表头（如"点位（5月）"）
@@ -1460,70 +1848,122 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         if re.search(r'点位[（(]\d+月[）)]', first_cell):
             header_row_indices.append(i)
 
-    # 策略B：辅助用空行（几乎全空的行）
+    # 策略B：检测 "Unnamed: 0" 列中的月份标签作为段边界
+    month_boundary_rows = []
+    if has_unnamed_month:
+        for i in range(len(raw_df)):
+            first_cell = str(raw_df.iloc[i, 0]).strip()
+            if re.search(r'^\d+月$', first_cell):
+                month_boundary_rows.append((i, first_cell))
+
+    # 策略C：辅助用空行（几乎全空的行）
     empty_row_indices = []
     for i in range(len(raw_df)):
         non_null_count = raw_df.iloc[i].notna().sum()
         if non_null_count <= 1:
             empty_row_indices.append(i)
 
-    is_multi_section = len(header_row_indices) >= 1
+    is_multi_section = len(header_row_indices) >= 1 or len(month_boundary_rows) >= 1
 
     if is_multi_section:
-        n_sections = len(header_row_indices)
-        # 如果有多个段表头，第一个其实是 Excel 的真实表头（已被 pandas 当作列名），
-        # 后面的段表头出现在数据行中
-        has_real_headers_in_data = any(h >= 0 for h in header_row_indices)
+        # --- 情况1：传统的 "点位（X月）" 段表头 ---
+        if len(header_row_indices) >= 1:
+            n_sections = len(header_row_indices)
 
-        print(f"  [信息] 检测到多段式数据结构：发现 {n_sections} 个段表头标记。")
+            print(f"  [信息] 检测到多段式数据结构：发现 {n_sections} 个段表头标记。")
 
-        # 构建段边界：每个段从 header_row 开始，到下一个 header_row 或空行或末尾结束
-        for hi, hdr_idx in enumerate(header_row_indices):
-            # 确定该段的结束位置
-            end_row = len(raw_df)
-            # 下一个段表头
-            if hi + 1 < len(header_row_indices):
-                end_row = min(end_row, header_row_indices[hi + 1])
-            # 下一个空行（但至少要有1行数据）
-            for ei in empty_row_indices:
-                if ei > hdr_idx and ei < end_row:
-                    end_row = ei
-                    break
+            # 构建段边界：每个段从 header_row 开始，到下一个 header_row 或空行或末尾结束
+            for hi, hdr_idx in enumerate(header_row_indices):
+                # 确定该段的结束位置
+                end_row = len(raw_df)
+                # 下一个段表头
+                if hi + 1 < len(header_row_indices):
+                    end_row = min(end_row, header_row_indices[hi + 1])
+                # 下一个空行（但至少要有1行数据）
+                for ei in empty_row_indices:
+                    if ei > hdr_idx and ei < end_row:
+                        end_row = ei
+                        break
 
-            if hdr_idx == 0:
-                # 第一个段：表头已经在 raw_df.columns 中
-                header_values = [str(c).strip() for c in raw_df.columns]
-                section_data = raw_df.iloc[0:end_row].copy()
-            else:
-                # 后续段：表头是该行的值
-                header_row = raw_df.iloc[hdr_idx]
-                header_values = [str(v).strip() if pd.notna(v) else "" for v in header_row]
-                section_data = raw_df.iloc[hdr_idx + 1:end_row].copy()
+                if hdr_idx == 0:
+                    # 第一个段：表头已经在 raw_df.columns 中
+                    header_values = [str(c).strip() for c in raw_df.columns]
+                    section_data = raw_df.iloc[0:end_row].copy()
+                else:
+                    # 后续段：表头是该行的值
+                    header_row = raw_df.iloc[hdr_idx]
+                    header_values = [str(v).strip() if pd.notna(v) else "" for v in header_row]
+                    section_data = raw_df.iloc[hdr_idx + 1:end_row].copy()
 
-            if section_data.shape[0] < 1:
-                continue
+                if section_data.shape[0] < 1:
+                    continue
 
-            # 清理列名
-            header_clean = []
-            for h in header_values:
-                h = h.strip()
-                if h.startswith("Unnamed") or h == "nan" or h == "None":
-                    h = ""
-                header_clean.append(h)
+                # 清理列名
+                header_clean = []
+                for h in header_values:
+                    h = h.strip()
+                    if h.startswith("Unnamed") or h == "nan" or h == "None":
+                        h = ""
+                    header_clean.append(h)
 
-            section_data.columns = header_clean
+                section_data.columns = header_clean
 
-            # 推断月份
-            month_label = None
-            header_text = " ".join(header_values)
-            month_match = re.search(r'(\d+)\s*月', header_text)
-            if month_match:
-                month_label = f"{int(month_match.group(1))}月"
+                # 推断月份
+                month_label = None
+                header_text = " ".join(header_values)
+                month_match = re.search(r'(\d+)\s*月', header_text)
+                if month_match:
+                    month_label = f"{int(month_match.group(1))}月"
 
-            print(f"  [信息]   第 {len(sections) + 1} 段：{len(section_data)} 行数据，"
-                  f"推断月份：{month_label or '未知'}")
+                print(f"  [信息]   第 {len(sections) + 1} 段：{len(section_data)} 行数据，"
+                      f"推断月份：{month_label or '未知'}")
 
-            sections.append((section_data, month_label))
+                sections.append((section_data, month_label))
+
+        # --- 情况2： "Unnamed: 0" 列中的月份标签作为段边界 ---
+        elif len(month_boundary_rows) >= 1:
+            print(f"  [信息] 检测到月份标签式分段数据：发现 {len(month_boundary_rows)} 个月份标记。")
+
+            for mi, (boundary_row, month_str) in enumerate(month_boundary_rows):
+                # 确定该段的结束位置
+                end_row = len(raw_df)
+                if mi + 1 < len(month_boundary_rows):
+                    end_row = month_boundary_rows[mi + 1][0]
+                # 下一个空行
+                for ei in empty_row_indices:
+                    if ei > boundary_row and ei < end_row:
+                        end_row = ei
+                        break
+
+                # 表头使用原始 columns
+                # 月份标签在 "Unnamed: 0" 列中，该行的其他列可能是数据
+                # 边界行的数据从第 1 列开始（跳过 Unnamed: 0 列）
+                data_start = boundary_row  # 包含边界行，因为其他列可能是数据
+                section_data = raw_df.iloc[data_start:end_row].copy()
+                section_data.columns = [str(c).strip() for c in raw_df.columns]
+
+                # 清理列名
+                header_clean = []
+                for h in section_data.columns:
+                    h = h.strip()
+                    if h.startswith("Unnamed") or h == "nan" or h == "None":
+                        h = ""
+                    header_clean.append(h)
+                section_data.columns = header_clean
+
+                # 如果边界行第 0 列是月份标签，清除该行该列的月份值（避免干扰数据）
+                if boundary_row < len(section_data):
+                    first_col_name = str(raw_df.columns[0])
+                    if first_col_name.startswith("Unnamed") or first_col_name == "":
+                        if "" in section_data.columns:
+                            section_data.loc[section_data.index[0], ""] = None
+
+                month_label = month_str
+
+                if section_data.shape[0] >= 1:
+                    print(f"  [信息]   第 {len(sections) + 1} 段：{len(section_data)} 行数据，"
+                          f"推断月份：{month_label}")
+                    sections.append((section_data, month_label))
     else:
         # 单段数据，直接使用
         sections.append((raw_df, None))
@@ -1577,12 +2017,12 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         if result.empty:
             continue
 
-        # --- 低于检出限值解析（＜）---
+        # --- 数值单元格统一解析：低于检出限（＜）、科学计数法、普通数值 ---
         # 仅对数值型指标列进行解析，跳过文本列（采样点位、湖泊名称等）
         _text_cols = {"采样点位", "湖泊名称", "监测时段", "采样日期", "经度", "纬度"}
         _parse_cols = [c for c in result.columns if c not in _text_cols]
         for col in _parse_cols:
-            result[col] = result[col].apply(_parse_below_detection)
+            result[col] = result[col].apply(_parse_numeric_cell)
 
         # --- 坐标转换：度分秒 → 十进制度 ---
         for coord_col in ["经度", "纬度"]:
@@ -1621,6 +2061,19 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         for col in numeric_candidates:
             if col in result.columns:
                 result[col] = pd.to_numeric(result[col], errors="coerce")
+
+        # --- Excel 日期序列号转换 ---
+        if "采样日期" in result.columns:
+            # 检查是否为 Excel 日期序列号（数值范围 ≈1000-100000）
+            sample_vals = result["采样日期"].dropna()
+            if len(sample_vals) > 0:
+                try:
+                    test_val = float(sample_vals.iloc[0])
+                    if 1000 < test_val < 100000:
+                        result["采样日期"] = result["采样日期"].apply(_excel_serial_to_date)
+                        print(f"  [信息] {sec_label} 检测到 Excel 日期序列号，已自动转换。")
+                except (ValueError, TypeError):
+                    pass
 
         # --- 点位→湖泊自动归属 ---
         if "采样点位" in result.columns:
@@ -1706,6 +2159,15 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     remaining = [c for c in result.columns if c not in final_cols]
     result = result[final_cols + remaining]
 
+    # --- 经纬度互检：纠正经度/纬度颠倒 ---
+    result = _correct_swapped_coordinates(result)
+
+    # --- 经纬度缺失填补：6/7 月沿用该点位 5 月基准经纬度 ---
+    result = fill_coordinates_from_baseline(result)
+
+    # --- 参考表坐标纠偏：纠正点位坐标填错（漂移超阈值）的情况 ---
+    result = _snap_coordinates_to_reference(result)
+
     # =========================================================================
     # 汇总报告
     # =========================================================================
@@ -1734,6 +2196,200 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         mib_count = result["2-MIB"].notna().sum()
         print(f"  [信息] 已检测到嗅味物质数据：GSM {gsm_count} 条、2-MIB {mib_count} 条。"
               f"全部分析模块可用。")
+
+    return result
+
+
+def _extract_month_from_date(value) -> Optional[int]:
+    """
+    从采样日期中提取月份（1-12）。
+
+    支持字符串（如"2026-06-15"、"2026年6月"）与 datetime/date 对象。
+
+    参数
+    ----
+    value : any
+        采样日期值。
+
+    返回
+    ----
+    Optional[int]
+        提取到的月份，无法提取则返回 None。
+    """
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+
+    if isinstance(value, (datetime.datetime, datetime.date)):
+        return value.month
+
+    import re
+    s = str(value).strip()
+    # 优先匹配 "YYYY-MM-DD" / "YYYY/MM" / "YYYY年M月"
+    m = re.search(r'(\d{4})[-/年](\d{1,2})', s)
+    if m:
+        month = int(m.group(2))
+        if 1 <= month <= 12:
+            return month
+    # 兜底：直接匹配 "M月"
+    m = re.search(r'(\d{1,2})\s*月', s)
+    if m:
+        month = int(m.group(1))
+        if 1 <= month <= 12:
+            return month
+    return None
+
+
+def fill_coordinates_from_baseline(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    经纬度缺失填补：6月/7月某点位经纬度缺失时，沿用该点位 5 月基准经纬度。
+
+    逻辑：
+    1. 从"采样日期"提取月份；
+    2. 对每个采样点位，取 5 月的首个非空经纬度作为基准；
+    3. 用该基准填补同一采样点位在 6月/7月（或任何非 5 月）缺失的经纬度。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含"采样点位"、"采样日期"及"经度"/"纬度"列。
+
+    返回
+    ----
+    pd.DataFrame
+        填补后的数据框（原地返回副本，不修改入参）。
+    """
+    validate_dataframe(df)
+
+    if "采样点位" not in df.columns or "采样日期" not in df.columns:
+        return df
+    coord_cols = [c for c in ["经度", "纬度"] if c in df.columns]
+    if not coord_cols:
+        return df
+
+    result = df.copy()
+
+    # --- 提取各行的月份 ---
+    month_series = result["采样日期"].apply(_extract_month_from_date)
+
+    # --- 构建 5 月基准坐标：点位 → {经度/纬度: 首个非空值} ---
+    baseline: dict = {}
+    may_mask = month_series == 5
+    for point, grp in result[may_mask].groupby("采样点位"):
+        for cc in coord_cols:
+            non_null = grp[cc].dropna()
+            if not non_null.empty:
+                baseline.setdefault(point, {})[cc] = non_null.iloc[0]
+
+    if not baseline:
+        return result
+
+    # --- 对非 5 月且坐标缺失的行进行填补 ---
+    fill_mask = (month_series != 5) & (~month_series.isna())
+    for idx in result.index[fill_mask]:
+        point = result.loc[idx, "采样点位"]
+        if point not in baseline:
+            continue
+        for cc in coord_cols:
+            if cc in baseline[point] and pd.isna(result.loc[idx, cc]):
+                result.loc[idx, cc] = baseline[point][cc]
+
+    return result
+
+
+# 中国境内经纬度合理范围（用于经纬度互检纠正）
+_COORD_LON_RANGE: Tuple[float, float] = (73.0, 135.0)
+_COORD_LAT_RANGE: Tuple[float, float] = (18.0, 54.0)
+
+
+def _correct_swapped_coordinates(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    经纬度互检：检测并纠正「经度/纬度」两列被颠倒的情况。
+
+    部分源数据将纬度值误填到经度列（反之亦然）。判定规则：
+    当某行的「经度」落在纬度合理区间（18~54）且「纬度」落在经度合理区间（73~135）
+    时，判定为颠倒并交换两列。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含"经度"/"纬度"列。
+
+    返回
+    ----
+    pd.DataFrame
+        纠正后的数据框（返回副本，不修改入参）。
+    """
+    if "经度" not in df.columns or "纬度" not in df.columns:
+        return df
+
+    result = df.copy()
+    lon = pd.to_numeric(result["经度"], errors="coerce")
+    lat = pd.to_numeric(result["纬度"], errors="coerce")
+
+    # 颠倒条件：经度值像纬度（18~54）且纬度值像经度（73~135）
+    swapped = (
+        lon.between(_COORD_LAT_RANGE[0], _COORD_LAT_RANGE[1])
+        & lat.between(_COORD_LON_RANGE[0], _COORD_LON_RANGE[1])
+    )
+
+    n_swapped = int(swapped.sum())
+    if n_swapped > 0:
+        result.loc[swapped, ["经度", "纬度"]] = (
+            result.loc[swapped, ["纬度", "经度"]].values
+        )
+        print(f"  [信息] 经纬度互检：已纠正 {n_swapped} 条颠倒的经纬度。")
+
+    return result
+
+
+# 坐标纠偏阈值（度）：实测坐标与基准坐标偏差超过该值才覆盖
+_COORD_SNAP_THRESHOLD: float = 0.5
+
+
+def _snap_coordinates_to_reference(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    参考表坐标纠偏：当点位命中基准坐标表（POINT_COORDS）且实测坐标与基准
+    偏差超过阈值时，用基准坐标覆盖。
+
+    用于纠正源数据中「坐标填错数值」的情况（如点位漂移到错误位置），
+    仅对已知点位生效，且偏差须超过阈值，避免误改正常的实测坐标。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含"采样点位"、"经度"/"纬度"列。
+
+    返回
+    ----
+    pd.DataFrame
+        纠偏后的数据框（返回副本，不修改入参）。
+    """
+    if "采样点位" not in df.columns or "经度" not in df.columns or "纬度" not in df.columns:
+        return df
+
+    result = df.copy()
+    points = result["采样点位"].astype(str).str.strip()
+    lon = pd.to_numeric(result["经度"], errors="coerce")
+    lat = pd.to_numeric(result["纬度"], errors="coerce")
+
+    for point, (ref_lat, ref_lon) in POINT_COORDS.items():
+        in_point = points == point
+        if not in_point.any():
+            continue
+
+        lon_off = in_point & (lon - ref_lon).abs().gt(_COORD_SNAP_THRESHOLD)
+        lat_off = in_point & (lat - ref_lat).abs().gt(_COORD_SNAP_THRESHOLD)
+
+        if lon_off.any() or lat_off.any():
+            result.loc[lon_off, "经度"] = ref_lon
+            result.loc[lat_off, "纬度"] = ref_lat
+            n = int((lon_off | lat_off).sum())
+            print(f"  [信息] 坐标纠偏：点位「{point}」纠正 {n} 条偏离基准的坐标。")
 
     return result
 

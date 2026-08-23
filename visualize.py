@@ -49,11 +49,26 @@ def _setup_chinese_font() -> str:
     import os
     import sys
 
-    # -- 策略1：扫描 matplotlib 已注册的字体 ---
+    # -- 策略1：按优先级扫描 matplotlib 已注册的字体 ---
+    # 优先选择已知渲染效果好的无衬线中文字体，避免装饰性字体（如方正大标宋）
+    cjk_priority = [
+        "Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "Noto Sans SC",
+        "WenQuanYi Micro Hei", "WenQuanYi Zen Hei",
+        "PingFang SC", "Hiragino Sans GB",
+        "Source Han Sans SC", "Droid Sans Fallback",
+    ]
+    for preferred in cjk_priority:
+        for font in fontManager.ttflist:
+            if preferred.lower() == font.name.lower():
+                plt.rcParams["font.family"] = "sans-serif"
+                plt.rcParams["font.sans-serif"] = [font.name, "sans-serif"]
+                print(f"  [信息] 已启用中文字体：{font.name}（来源：{font.fname}）")
+                return font.name
+
+    # 兜底：模糊匹配其他 CJK 字体（排除装饰/衬线字体，优先无衬线）
     cjk_keywords = [
-        "CJK", "Hei", "Ming", "Song", "YaHei", "SimHei", "SimSun",
-        "Noto Sans", "WenQuanYi", "PingFang", "Hiragino",
-        "Microsoft YaHei", "Source Han", "Droid Sans",
+        "Hei", "YaHei", "Noto Sans", "WenQuanYi", "PingFang", "Hiragino",
+        "Droid Sans", "Microsoft JhengHei",
     ]
     for font in fontManager.ttflist:
         name = font.name
@@ -61,7 +76,7 @@ def _setup_chinese_font() -> str:
             if kw.lower() in name.lower():
                 plt.rcParams["font.family"] = "sans-serif"
                 plt.rcParams["font.sans-serif"] = [name, "sans-serif"]
-                print(f"  [信息] 已启用中文字体：{name}（来源：{font.fname}）")
+                print(f"  [信息] 已启用中文字体（兜底匹配）：{name}（来源：{font.fname}）")
                 return name
 
     # -- 策略2：检查常见系统字体路径 ---
@@ -218,9 +233,23 @@ NATURE_PALETTE: list = [
 ]
 
 # 设置 seaborn 学术风格
+# 注意：sns.set_style / sns.set_context 会重置 font.sans-serif 与各项字号，
+# 把上方 _setup_chinese_font() 的中文字体设置覆盖掉，导致中文显示为方框。
+# 因此必须在 seaborn 调用之后，重新应用中文字体与学术字号配置。
 sns.set_style("ticks")
 sns.set_palette(sns.color_palette(NATURE_PALETTE))
 sns.set_context("paper", font_scale=1.0)
+
+# --- 重新应用中文字体与学术字号（防止被 seaborn 覆盖）---
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = [AVAILABLE_FONT, "sans-serif"]
+plt.rcParams["axes.unicode_minus"] = False
+plt.rcParams["font.size"] = 9
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 10
+plt.rcParams["legend.fontsize"] = 8
+plt.rcParams["xtick.labelsize"] = 8
+plt.rcParams["ytick.labelsize"] = 8
 
 
 # ============================================================================
@@ -1008,6 +1037,348 @@ def plot_bar_comparison(
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.grid(True, alpha=0.3, axis="y", linestyle="--")
 
+    fig.tight_layout()
+    return fig
+
+
+# ============================================================================
+# 空间 GIS 地图（采样断面分布）
+# ============================================================================
+
+# 基准坐标表统一从 process_data 引入（单一数据源，避免重复维护）
+from process_data import POINT_COORDS  # noqa: E402
+
+# 嗅味浓度分级阈值（ng/L）
+_ODOR_LIGHT: float = 10.0
+_ODOR_SEVERE: float = 50.0
+
+# 风险等级配色：正常（绿）/ 轻度（黄）/ 严重（红）/ 未知（灰）
+_ODOR_LEVEL_COLORS: dict = {
+    "正常":     "#2e8b57",
+    "轻度超标": "#e6a817",
+    "严重超标": "#c0392b",
+    "未知":     "#9aa5b1",
+}
+
+
+def _classify_odor_level(value: Optional[float]) -> str:
+    """
+    按嗅味浓度分级：<10 正常、10~50 轻度超标、>50 严重超标。
+    """
+    if value is None:
+        return "未知"
+    if isinstance(value, float) and np.isnan(value):
+        return "未知"
+    if value < _ODOR_LIGHT:
+        return "正常"
+    if value <= _ODOR_SEVERE:
+        return "轻度超标"
+    return "严重超标"
+
+
+def _build_point_geo_frame(
+    df: pd.DataFrame,
+    odor_col: str,
+) -> pd.DataFrame:
+    """
+    构建「每采样点一行」的地理聚合表，用于 GIS 地图绘制。
+
+    包含字段：采样点位、湖泊名称、纬度、经度、嗅味浓度均值、风险等级，
+    以及各理化指标的均值（用于悬浮弹窗）。
+    """
+    point_col = "采样点位" if "采样点位" in df.columns else "湖泊名称"
+    lake_col = "湖泊名称" if "湖泊名称" in df.columns else point_col
+
+    rows: list = []
+    for name, grp in df.groupby(point_col):
+        # --- 解析坐标：优先实测均值，其次内置基准 ---
+        lat: Optional[float] = None
+        lon: Optional[float] = None
+        if "纬度" in grp.columns and "经度" in grp.columns:
+            lat_vals = pd.to_numeric(grp["纬度"], errors="coerce").dropna()
+            lon_vals = pd.to_numeric(grp["经度"], errors="coerce").dropna()
+            if not lat_vals.empty and not lon_vals.empty:
+                lat = float(lat_vals.mean())
+                lon = float(lon_vals.mean())
+        if (lat is None or lon is None) and name in POINT_COORDS:
+            lat, lon = POINT_COORDS[name]
+        if lat is None or lon is None:
+            continue  # 无坐标的点跳过
+
+        # --- 嗅味浓度均值 ---
+        odor_val: Optional[float] = None
+        if odor_col in grp.columns:
+            odor_vals = pd.to_numeric(grp[odor_col], errors="coerce").dropna()
+            if not odor_vals.empty:
+                odor_val = float(odor_vals.mean())
+
+        # --- 理化指标均值（悬浮弹窗用） ---
+        info_cols = [
+            "水温", "DO", "pH", "浊度", "TN", "TP", "NH3-N", "CODMn",
+            "叶绿素a", "藻密度", "电导率", "GSM", "2-MIB",
+        ]
+        info: dict = {}
+        for c in info_cols:
+            if c in grp.columns:
+                vals = pd.to_numeric(grp[c], errors="coerce").dropna()
+                info[c] = round(float(vals.mean()), 3) if not vals.empty else None
+
+        lake = grp[lake_col].iloc[0] if lake_col in grp.columns else name
+
+        rows.append({
+            "采样点位": name,
+            "湖泊名称": lake,
+            "纬度": lat,
+            "经度": lon,
+            odor_col: odor_val if odor_val is not None else 0.0,
+            "风险等级": _classify_odor_level(odor_val),
+            **info,
+        })
+
+    return pd.DataFrame(rows)
+
+
+def _plot_gis_map_matplotlib(
+    geo: pd.DataFrame,
+    odor_col: str,
+    title: str,
+) -> plt.Figure:
+    """
+    GIS 地图的 matplotlib 兜底实现（无 basemap，以经纬度散点呈现）。
+    仅在未安装 plotly 时使用。
+    """
+    fig, ax = plt.subplots(figsize=(11, 8))
+
+    for level, color in _ODOR_LEVEL_COLORS.items():
+        sub = geo[geo["风险等级"] == level]
+        if sub.empty:
+            continue
+        sizes = pd.to_numeric(sub[odor_col], errors="coerce").fillna(0.0)
+        max_s = float(sizes.max()) if sizes.max() > 0 else 1.0
+        marker_size = 60 + 320 * (sizes / max_s)
+        ax.scatter(
+            sub["经度"], sub["纬度"],
+            s=marker_size,
+            c=color,
+            alpha=0.75,
+            edgecolors="white",
+            linewidth=0.8,
+            label=level,
+            zorder=3,
+        )
+        for _, r in sub.iterrows():
+            ax.annotate(
+                str(r["采样点位"]),
+                (r["经度"], r["纬度"]),
+                textcoords="offset points",
+                xytext=(0, 12),
+                ha="center",
+                fontsize=9,
+            )
+
+    ax.set_xlabel("经度（°E）", fontsize=12, fontweight="medium")
+    ax.set_ylabel("纬度（°N）", fontsize=12, fontweight="medium")
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax.legend(title="风险等级", fontsize=9, title_fontsize=10, frameon=True)
+    ax.grid(True, alpha=0.3, linestyle="--")
+    fig.tight_layout()
+    return fig
+
+
+def plot_gis_map(
+    df: pd.DataFrame,
+    odor_col: str = "2-MIB",
+    title: str = "长三角湖库采样断面空间分布与嗅味风险",
+    zoom: int = 6,
+    center: Tuple[float, float] = (31.0, 120.0),
+):
+    """
+    绘制采样断面的空间 GIS 地图。
+
+    - 气泡大小对应嗅味浓度（odor_col）。
+    - 颜色分级：正常（<10，绿）、轻度（10~50，黄）、严重（>50，红）。
+    - 悬浮弹窗展示该点位的理化指标均值。
+
+    优先使用 plotly.express.scatter_mapbox（免费 carto-positron 底图，无需 token）；
+    若未安装 plotly，则回退为 matplotlib 散点图。
+
+    参数
+    ----
+    df : pd.DataFrame
+        监测数据集。
+    odor_col : str
+        用于着色的嗅味物质列（如"2-MIB"或"GSM"）。
+    title : str
+        图表标题。
+    zoom : int
+        地图缩放级别（仅 plotly 有效）。
+    center : Tuple[float, float]
+        地图中心（纬度, 经度）（仅 plotly 有效）。
+
+    返回
+    ----
+    plotly.graph_objects.Figure 或 plt.Figure
+        地图对象（类型取决于是否安装了 plotly）。
+    """
+    _validate_df_and_cols(df, [])
+
+    # 嗅味列兜底：优先 GSM/2-MIB
+    if odor_col not in df.columns:
+        for cand in ("2-MIB", "GSM"):
+            if cand in df.columns and not df[cand].isna().all():
+                odor_col = cand
+                break
+
+    geo = _build_point_geo_frame(df, odor_col)
+    if geo.empty:
+        raise ValueError(
+            "数据中没有可定位的采样点位（既无经度/纬度列，点位也不在内置坐标基准中）。"
+        )
+
+    # --- 优先 plotly ---
+    try:
+        import plotly.express as px  # noqa: F401
+    except ImportError:
+        px = None
+
+    if px is not None:
+        hover_cols = [
+            c for c in (
+                "水温", "DO", "pH", "浊度", "TN", "TP", "NH3-N", "CODMn",
+                "叶绿素a", "藻密度", "电导率", "GSM", "2-MIB",
+            ) if c in geo.columns and c != odor_col
+        ]
+        fig = px.scatter_mapbox(
+            geo,
+            lat="纬度",
+            lon="经度",
+            color="风险等级",
+            color_discrete_map=_ODOR_LEVEL_COLORS,
+            size=odor_col,
+            size_max=40,
+            hover_name="采样点位",
+            hover_data={
+                "纬度": False,
+                "经度": False,
+                "风险等级": False,
+                **{c: ":.3f" for c in hover_cols},
+            },
+            zoom=zoom,
+            center={"lat": center[0], "lon": center[1]},
+            mapbox_style="carto-positron",
+            title=title,
+            category_orders={"风险等级": ["正常", "轻度超标", "严重超标", "未知"]},
+        )
+        fig.update_layout(
+            margin={"r": 0, "t": 60, "l": 0, "b": 0},
+            legend=dict(
+                title="风险等级",
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+            ),
+            height=580,
+        )
+        return fig
+
+    # --- matplotlib 兜底 ---
+    return _plot_gis_map_matplotlib(geo, odor_col, title)
+
+
+def is_plotly_figure(fig) -> bool:
+    """
+    判断 Figure 是否为 plotly 对象，用于选择 st.plotly_chart 或 st.pyplot 渲染。
+
+    参数
+    ----
+    fig : object
+        待判断的图表对象。
+
+    返回
+    ----
+    bool
+        若为 plotly 对象返回 True，否则 False。
+    """
+    return fig is not None and fig.__class__.__module__.startswith("plotly")
+
+
+# ============================================================================
+# 双 Y 轴对比图
+# ============================================================================
+
+def plot_dual_axis(
+    df: pd.DataFrame,
+    x_col: str = "监测时段",
+    left_col: str = "水温",
+    right_col: str = "GSM",
+    title: str = "",
+    figsize: Tuple[int, int] = (12, 6),
+) -> plt.Figure:
+    """
+    绘制双 Y 轴对比图：左轴展示一个指标（如水温/TN），右轴展示另一个指标
+    （如 2-MIB/土臭素），用于观察两变量在不同类别下的协同变化。
+
+    参数
+    ----
+    df : pd.DataFrame
+        监测数据集。
+    x_col : str
+        X 轴分类变量（如"监测时段"、"湖泊名称"）。
+    left_col : str
+        左 Y 轴指标（如"水温"、"TN"）。
+    right_col : str
+        右 Y 轴指标（如"2-MIB"、"GSM"）。
+    title : str
+        图表标题；为空时自动生成。
+    figsize : Tuple[int, int]
+        图表尺寸。
+
+    返回
+    ----
+    plt.Figure
+        matplotlib Figure 对象。
+    """
+    _validate_df_and_cols(df, [x_col, left_col, right_col])
+    if not title:
+        title = f"{left_col}（左轴）与 {right_col}（右轴）的对比"
+
+    # 按 X 分类聚合均值
+    agg = df.groupby(x_col, as_index=False)[[left_col, right_col]].mean()
+    x_pos = np.arange(len(agg))
+
+    fig, ax1 = plt.subplots(figsize=figsize)
+
+    # --- 左轴（线 + 圆形标记） ---
+    ax1.plot(
+        x_pos, agg[left_col],
+        marker="o", markersize=5, linewidth=2,
+        color=NATURE_PALETTE[1], label=left_col,
+    )
+    ax1.set_xlabel(x_col, fontsize=12, fontweight="medium")
+    ax1.set_ylabel(left_col, fontsize=12, fontweight="medium", color=NATURE_PALETTE[1])
+    ax1.tick_params(axis="y", labelcolor=NATURE_PALETTE[1])
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels(agg[x_col], rotation=45, ha="right", fontsize=9)
+
+    # --- 右轴（线 + 方形标记，虚线） ---
+    ax2 = ax1.twinx()
+    ax2.plot(
+        x_pos, agg[right_col],
+        marker="s", markersize=5, linewidth=2, linestyle="--",
+        color=NATURE_PALETTE[0], label=right_col,
+    )
+    ax2.set_ylabel(right_col, fontsize=12, fontweight="medium", color=NATURE_PALETTE[0])
+    ax2.tick_params(axis="y", labelcolor=NATURE_PALETTE[0])
+
+    # --- 合并双轴图例 ---
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=9)
+
+    ax1.set_title(title, fontsize=14, fontweight="bold", pad=15)
+    ax1.grid(True, alpha=0.3, linestyle="--")
     fig.tight_layout()
     return fig
 
