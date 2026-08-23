@@ -55,6 +55,14 @@ COLUMN_DTYPES: dict = {
     "2-MIB":   np.float64,
 }
 
+# 环境驱动因子白名单：仅这些水质/生物指标参与「驱动因子」相关分析。
+# 排除坐标（经度/纬度）与物理量（DEP/ALT/压力/盐度/DO饱和度等），
+# 避免把这些非驱动项当作嗅味物质的环境驱动因子。
+DRIVER_COLUMNS: list = [
+    "水温", "DO", "pH", "浊度", "电导率", "TN", "TP", "NH3-N", "CODMn",
+    "叶绿素a", "藻密度", "fDOM", "PC",
+]
+
 
 def validate_dataframe(df: pd.DataFrame) -> bool:
     """

@@ -63,6 +63,7 @@ from process_data import (
     aggregate_by_group,
     normalize_columns,
     smart_import,
+    DRIVER_COLUMNS,
 )
 from visualize import (
     plot_temporal_trend,
@@ -942,8 +943,7 @@ def render_visualization_page() -> None:
         )
 
     elif viz_type == "多面板驱动因子分析":
-        exclude_from_predictors = {"GSM", "2-MIB", "湖泊名称", "采样点位", "监测时段", "采样日期"}
-        predictor_candidates = [c for c in all_numeric if c not in exclude_from_predictors]
+        predictor_candidates = [c for c in DRIVER_COLUMNS if c in all_numeric and c != y_variable]
         fig = plot_multi_panel_dashboard(
             filtered_df,
             target_col=y_variable,
@@ -1086,8 +1086,9 @@ def render_analysis_page() -> None:
                 st.warning("⚠️ 请至少选择一个目标变量。")
             else:
                 with st.spinner("正在计算相关系数..."):
+                    driver_cols = [c for c in DRIVER_COLUMNS if c in df.columns]
                     corr_df = run_correlation_analysis(
-                        df, target_cols=target, method=method,
+                        df, target_cols=target, predictor_cols=driver_cols, method=method,
                     )
                 st.markdown(
                     f'<div class="success-box">✅ 分析完成！共计算 <b>{len(corr_df)}</b> 对变量关系。</div>',
@@ -1117,7 +1118,7 @@ def render_analysis_page() -> None:
         target_col = st.selectbox("选择目标变量", options=target_options)
 
         all_num = df.select_dtypes(include=[np.number]).columns.tolist()
-        predictor_options = [c for c in all_num if c not in target_options]
+        predictor_options = [c for c in DRIVER_COLUMNS if c in all_num]
         predictor_cols = st.multiselect(
             "选择预测变量（环境因子）",
             options=predictor_options,
@@ -1163,10 +1164,11 @@ def render_analysis_page() -> None:
 
         target_col = st.selectbox("选择目标变量", options=["GSM", "2-MIB"])
         all_num = df.select_dtypes(include=[np.number]).columns.tolist()
+        driver_opts = [c for c in DRIVER_COLUMNS if c in all_num]
         predictor_cols = st.multiselect(
             "选择预测变量",
-            options=[c for c in all_num if c not in ["GSM", "2-MIB"]],
-            default=[c for c in all_num if c not in ["GSM", "2-MIB"]][:6],
+            options=driver_opts,
+            default=driver_opts[:min(6, len(driver_opts))],
         )
         n_trees = st.slider("决策树数量", 50, 500, 100, 50)
 
@@ -1208,10 +1210,11 @@ def render_analysis_page() -> None:
 
         target_col = st.selectbox("选择目标变量", options=["GSM", "2-MIB"])
         all_num = df.select_dtypes(include=[np.number]).columns.tolist()
+        driver_opts = [c for c in DRIVER_COLUMNS if c in all_num]
         predictor_cols = st.multiselect(
             "选择预测变量",
-            options=[c for c in all_num if c not in ["GSM", "2-MIB"]],
-            default=[c for c in all_num if c not in ["GSM", "2-MIB"]][:5],
+            options=driver_opts,
+            default=driver_opts[:min(5, len(driver_opts))],
         )
         cv_folds = st.slider("交叉验证折数", 3, 10, 5)
 
