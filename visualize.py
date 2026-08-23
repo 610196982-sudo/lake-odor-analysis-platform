@@ -30,6 +30,16 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # ============================================================================
 
 # --- 中文字体配置（鲁棒跨平台方案）---
+
+# 全平台中文字体回退链：即使主检测失败，matplotlib 也会按顺序尝试，
+# 命中任意已安装的 CJK 字体即可正常渲染中文（无需依赖单一字体）。
+_CJK_FONT_STACK: list = [
+    "Microsoft YaHei", "SimHei", "Noto Sans CJK SC", "Noto Sans SC",
+    "WenQuanYi Micro Hei", "WenQuanYi Zen Hei", "PingFang SC",
+    "Hiragino Sans GB", "Source Han Sans SC", "Droid Sans Fallback",
+]
+
+
 def _setup_chinese_font() -> str:
     """
     检测并配置中文字体，确保在 Windows / macOS / Linux（含 Streamlit Cloud）上正确渲染中文。
@@ -48,6 +58,26 @@ def _setup_chinese_font() -> str:
     from matplotlib.font_manager import fontManager, FontProperties
     import os
     import sys
+
+    # -- 策略0（云端优先）：加载仓库内置中文字体，不依赖 apt 安装与网络下载 --
+    # 本地 Windows/macOS 自带优质中文字体，走后面的策略即可；云端 Linux 缺少
+    # 中文字体，且 apt/下载均不稳定，因此优先从项目 fonts/ 目录加载静态字体。
+    if sys.platform not in ("win32", "darwin"):
+        bundled_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "fonts", "NotoSansSC-Regular.otf",
+        )
+        if os.path.exists(bundled_path):
+            try:
+                fontManager.addfont(bundled_path)
+                bundled_name = FontProperties(fname=bundled_path).get_name()
+                plt.rcParams["font.family"] = "sans-serif"
+                plt.rcParams["font.sans-serif"] = [bundled_name, "sans-serif"]
+                plt.rcParams["axes.unicode_minus"] = False
+                print(f"  [信息] 已加载仓库内置中文字体：{bundled_name}（{bundled_path}）")
+                return bundled_name
+            except Exception as e:
+                print(f"  [警告] 加载仓库内置字体失败：{e}")
 
     # -- 策略1：按优先级扫描 matplotlib 已注册的字体 ---
     # 优先选择已知渲染效果好的无衬线中文字体，避免装饰性字体（如方正大标宋）
@@ -188,7 +218,9 @@ def _setup_chinese_font() -> str:
         "  [警告] 未找到任何中文字体！图表中的中文标签可能显示为方框。\n"
         "         Linux 用户请执行：sudo apt install fonts-noto-cjk"
     )
-    plt.rcParams["font.sans-serif"] = ["sans-serif"]
+    # 即使未主动检测到，也设置完整回退链，交给 matplotlib 自行匹配
+    plt.rcParams["font.family"] = "sans-serif"
+    plt.rcParams["font.sans-serif"] = _CJK_FONT_STACK + ["sans-serif"]
     return "sans-serif"
 
 
@@ -242,7 +274,12 @@ sns.set_context("paper", font_scale=1.0)
 
 # --- 重新应用中文字体与学术字号（防止被 seaborn 覆盖）---
 plt.rcParams["font.family"] = "sans-serif"
-plt.rcParams["font.sans-serif"] = [AVAILABLE_FONT, "sans-serif"]
+# 检测到的字体置顶，其后接完整回退链，最后以 sans-serif 兜底
+plt.rcParams["font.sans-serif"] = (
+    ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
+    + _CJK_FONT_STACK
+    + ["sans-serif"]
+)
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["font.size"] = 9
 plt.rcParams["axes.titlesize"] = 12
