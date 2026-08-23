@@ -1249,7 +1249,7 @@ def plot_gis_map(
     - 颜色分级：正常（<10，绿）、轻度（10~50，黄）、严重（>50，红）。
     - 悬浮弹窗展示该点位的理化指标均值。
 
-    优先使用 plotly.express.scatter_mapbox（免费 carto-positron 底图，无需 token）；
+    优先使用 plotly.express.scatter_mapbox（免费 open-street-map 彩色底图，无需 token）；
     若未安装 plotly，则回退为 matplotlib 散点图。
 
     参数
@@ -1315,7 +1315,7 @@ def plot_gis_map(
             },
             zoom=zoom,
             center={"lat": center[0], "lon": center[1]},
-            mapbox_style="carto-positron",
+            mapbox_style="open-street-map",
             title=title,
             category_orders={"风险等级": ["正常", "轻度超标", "严重超标", "未知"]},
         )
