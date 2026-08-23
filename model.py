@@ -18,7 +18,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import cross_val_score, train_test_split
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
 from sklearn.preprocessing import StandardScaler
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -205,6 +205,52 @@ def run_correlation_analysis(
     return result_df.reset_index(drop=True)
 
 
+def _prepare_model_data(
+    df: pd.DataFrame,
+    target_col: str,
+    predictor_cols: List[str],
+) -> Tuple[np.ndarray, np.ndarray, int, int]:
+    """
+    准备机器学习模型输入数据：剔除目标变量缺失的行，对预测变量缺失值做中位数填充。
+
+    sklearn 模型无法处理 NaN，直接 dropna 在多指标缺失时会删光所有样本。
+    此函数改为：
+    1. 仅剔除「目标变量」缺失的行（目标必须有实测值）；
+    2. 预测变量缺失值用该列中位数填充，保留全部可用样本。
+
+    参数
+    ----
+    df : pd.DataFrame
+        监测数据集。
+    target_col : str
+        目标变量列名（如 GSM / 2-MIB）。
+    predictor_cols : List[str]
+        预测变量列名列表。
+
+    返回
+    ----
+    Tuple[np.ndarray, np.ndarray, int, int]
+        (X, y, 样本量, 填充的缺失值个数)。
+    """
+    sub = df[[target_col] + list(predictor_cols)].copy()
+    # 1) 剔除目标变量缺失的行
+    sub = sub[sub[target_col].notna()]
+
+    # 2) 预测变量中位数填充
+    n_imputed = 0
+    for col in predictor_cols:
+        if sub[col].isna().any():
+            n_imputed += int(sub[col].isna().sum())
+            median = sub[col].median()
+            if pd.isna(median):  # 整列全空则用 0 兜底
+                median = 0.0
+            sub[col] = sub[col].fillna(median)
+
+    X = sub[predictor_cols].values.astype(float)
+    y = sub[target_col].values.astype(float)
+    return X, y, len(sub), n_imputed
+
+
 # ============================================================================
 # 多元线性回归模型
 # ============================================================================
@@ -245,14 +291,11 @@ def build_linear_regression_model(
     if test_size <= 0 or test_size >= 1:
         raise ValueError(f"test_size 应在 (0, 1) 之间，当前传入：{test_size}")
 
-    all_cols = [target_col] + predictor_cols
-    clean_df = df[all_cols].dropna()
-
-    if len(clean_df) < 10:
-        raise ValueError(f"有效样本量不足（当前 {len(clean_df)}），至少需要 10 条。")
-
-    X = clean_df[predictor_cols].values
-    y = clean_df[target_col].values
+    X, y, n_samples, n_imputed = _prepare_model_data(df, target_col, predictor_cols)
+    if n_samples < 10:
+        raise ValueError(f"有效样本量不足（当前 {n_samples}），至少需要 10 条。")
+    if n_imputed:
+        print(f"  [信息] 线性回归：对预测变量 {n_imputed} 个缺失值做了中位数填充。")
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state
@@ -335,13 +378,11 @@ def analyze_feature_importance_rf(
     if n_estimators < 10:
         raise ValueError(f"n_estimators 至少为 10，当前传入：{n_estimators}")
 
-    all_cols = [target_col] + predictor_cols
-    clean_df = df[all_cols].dropna()
-    if len(clean_df) < 20:
-        raise ValueError(f"有效样本量不足（当前 {len(clean_df)}），至少需要 20 条。")
-
-    X = clean_df[predictor_cols].values
-    y = clean_df[target_col].values
+    X, y, n_samples, n_imputed = _prepare_model_data(df, target_col, predictor_cols)
+    if n_samples < 20:
+        raise ValueError(f"有效样本量不足（当前 {n_samples}），至少需要 20 条。")
+    if n_imputed:
+        print(f"  [信息] 随机森林：对预测变量 {n_imputed} 个缺失值做了中位数填充。")
 
     rf_model = RandomForestRegressor(
         n_estimators=n_estimators,
@@ -614,13 +655,11 @@ def evaluate_model_cv(
     if cv_folds < 2 or cv_folds > max_folds:
         raise ValueError(f"cv_folds 应在 [2, {max_folds}] 之间，当前传入：{cv_folds}")
 
-    all_cols = [target_col] + predictor_cols
-    clean_df = df[all_cols].dropna()
-    if len(clean_df) < cv_folds * 3:
-        raise ValueError(f"有效样本量不足（{len(clean_df)}）以进行 {cv_folds} 折交叉验证。")
-
-    X = clean_df[predictor_cols].values
-    y = clean_df[target_col].values
+    X, y, n_samples, n_imputed = _prepare_model_data(df, target_col, predictor_cols)
+    if n_samples < cv_folds * 3:
+        raise ValueError(f"有效样本量不足（{n_samples}）以进行 {cv_folds} 折交叉验证。")
+    if n_imputed:
+        print(f"  [信息] 交叉验证：对预测变量 {n_imputed} 个缺失值做了中位数填充。")
 
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
@@ -638,7 +677,7 @@ def evaluate_model_cv(
         "各折RMSE": [round(float(s), 4) for s in rmse_scores],
         "平均RMSE": round(float(rmse_scores.mean()), 4),
         "RMSE标准差": round(float(rmse_scores.std(ddof=1)), 4),
-        "样本总量": int(len(clean_df)),
+        "样本总量": int(n_samples),
     }
     return result
 
