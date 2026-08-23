@@ -736,26 +736,29 @@ def plot_scatter_with_regression(
                 edgecolors="white",
                 linewidth=0.5,
             )
-            # 分组绘制回归线
+            # 分组绘制回归线（x 非恒定才拟合，退化数据跳过，避免 SVD 奇异）
             if add_regression and len(group_data) >= 3:
                 x_vals = group_data[x_col].values
                 y_vals = group_data[y_col].values
-                # 过滤 NaN
+                # 过滤 NaN / 非数值
                 mask = ~(np.isnan(x_vals) | np.isnan(y_vals))
                 x_vals = x_vals[mask]
                 y_vals = y_vals[mask]
-                if len(x_vals) >= 3:
-                    coeffs = np.polyfit(x_vals, y_vals, 1)
-                    poly_fn = np.poly1d(coeffs)
-                    x_sorted = np.sort(x_vals)
-                    ax.plot(
-                        x_sorted,
-                        poly_fn(x_sorted),
-                        color=color,
-                        linewidth=2,
-                        linestyle="--",
-                        alpha=0.8,
-                    )
+                if len(x_vals) >= 3 and np.unique(x_vals).size >= 2:
+                    try:
+                        coeffs = np.polyfit(x_vals, y_vals, 1)
+                        poly_fn = np.poly1d(coeffs)
+                        x_sorted = np.sort(x_vals)
+                        ax.plot(
+                            x_sorted,
+                            poly_fn(x_sorted),
+                            color=color,
+                            linewidth=2,
+                            linestyle="--",
+                            alpha=0.8,
+                        )
+                    except (np.linalg.LinAlgError, ValueError):
+                        pass
     else:
         ax.scatter(
             df[x_col],
@@ -766,27 +769,30 @@ def plot_scatter_with_regression(
             edgecolors="white",
             linewidth=0.5,
         )
-        # 绘制总体回归线
+        # 绘制总体回归线（并集掩码对齐 x/y，x 非恒定才拟合，退化数据跳过）
         if add_regression:
-            x_vals = df[x_col].dropna().values
-            y_vals = df[y_col].dropna().values
-            # 对齐长度
-            min_len = min(len(x_vals), len(y_vals))
-            x_vals = x_vals[:min_len]
-            y_vals = y_vals[:min_len]
-            if min_len >= 3:
-                coeffs = np.polyfit(x_vals, y_vals, 1)
-                poly_fn = np.poly1d(coeffs)
-                x_sorted = np.sort(x_vals)
-                ax.plot(
-                    x_sorted,
-                    poly_fn(x_sorted),
-                    color="black",
-                    linewidth=2,
-                    linestyle="--",
-                    alpha=0.7,
-                    label=f"线性拟合 (y={coeffs[0]:.3f}x + {coeffs[1]:.3f})",
-                )
+            valid_mask = (
+                pd.to_numeric(df[x_col], errors="coerce").notna()
+                & pd.to_numeric(df[y_col], errors="coerce").notna()
+            )
+            x_vals = pd.to_numeric(df.loc[valid_mask, x_col], errors="coerce").values
+            y_vals = pd.to_numeric(df.loc[valid_mask, y_col], errors="coerce").values
+            if len(x_vals) >= 3 and np.unique(x_vals).size >= 2:
+                try:
+                    coeffs = np.polyfit(x_vals, y_vals, 1)
+                    poly_fn = np.poly1d(coeffs)
+                    x_sorted = np.sort(x_vals)
+                    ax.plot(
+                        x_sorted,
+                        poly_fn(x_sorted),
+                        color="black",
+                        linewidth=2,
+                        linestyle="--",
+                        alpha=0.7,
+                        label=f"线性拟合 (y={coeffs[0]:.3f}x + {coeffs[1]:.3f})",
+                    )
+                except (np.linalg.LinAlgError, ValueError):
+                    pass
 
     # --- 设置标签和标题 ---
     ax.set_xlabel(x_col, fontsize=12, fontweight="medium")
@@ -883,11 +889,14 @@ def plot_multi_panel_dashboard(
         ax = axes[row][col]
 
         # 散点图 + 回归线
-        x_vals = df[pred_col].dropna().values
-        y_vals = df[target_col].dropna().values
-        min_len = min(len(x_vals), len(y_vals))
-        x_vals = x_vals[:min_len]
-        y_vals = y_vals[:min_len]
+        # 用「并集掩码」同时剔除 x/y 中的缺失与非数值，保证两者严格对齐
+        valid_mask = (
+            pd.to_numeric(df[pred_col], errors="coerce").notna()
+            & pd.to_numeric(df[target_col], errors="coerce").notna()
+        )
+        x_vals = pd.to_numeric(df.loc[valid_mask, pred_col], errors="coerce").values
+        y_vals = pd.to_numeric(df.loc[valid_mask, target_col], errors="coerce").values
+        n_pts = len(x_vals)
 
         ax.scatter(
             x_vals,
@@ -898,37 +907,41 @@ def plot_multi_panel_dashboard(
             edgecolors="none",
         )
 
-        # 回归拟合
-        if min_len >= 3:
-            coeffs = np.polyfit(x_vals, y_vals, 1)
-            poly_fn = np.poly1d(coeffs)
-            x_sorted = np.sort(x_vals)
-            ax.plot(
-                x_sorted,
-                poly_fn(x_sorted),
-                color="black",
-                linewidth=1.5,
-                linestyle="--",
-                alpha=0.7,
-            )
+        # 回归拟合（仅当点数足够且 x 非恒定，否则跳过以避免 SVD 奇异）
+        if n_pts >= 3 and np.unique(x_vals).size >= 2:
+            try:
+                coeffs = np.polyfit(x_vals, y_vals, 1)
+                poly_fn = np.poly1d(coeffs)
+                x_sorted = np.sort(x_vals)
+                ax.plot(
+                    x_sorted,
+                    poly_fn(x_sorted),
+                    color="black",
+                    linewidth=1.5,
+                    linestyle="--",
+                    alpha=0.7,
+                )
 
-            # 添加 R² 标注
-            residuals = y_vals - poly_fn(x_vals)
-            ss_res = np.sum(residuals ** 2)
-            ss_tot = np.sum((y_vals - np.mean(y_vals)) ** 2)
-            r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
-            ax.text(
-                0.05, 0.95,
-                f"R² = {r_squared:.3f}",
-                transform=ax.transAxes,
-                fontsize=9,
-                verticalalignment="top",
-                bbox={
-                    "boxstyle": "round,pad=0.3",
-                    "facecolor": "white",
-                    "alpha": 0.8,
-                },
-            )
+                # 添加 R² 标注
+                residuals = y_vals - poly_fn(x_vals)
+                ss_res = np.sum(residuals ** 2)
+                ss_tot = np.sum((y_vals - np.mean(y_vals)) ** 2)
+                r_squared = 1 - (ss_res / ss_tot) if ss_tot > 0 else 0
+                ax.text(
+                    0.05, 0.95,
+                    f"R² = {r_squared:.3f}",
+                    transform=ax.transAxes,
+                    fontsize=9,
+                    verticalalignment="top",
+                    bbox={
+                        "boxstyle": "round,pad=0.3",
+                        "facecolor": "white",
+                        "alpha": 0.8,
+                    },
+                )
+            except (np.linalg.LinAlgError, ValueError):
+                # 数据退化（如常数列/奇异矩阵），跳过回归线，仅保留散点
+                pass
 
         ax.set_xlabel(pred_col, fontsize=9)
         ax.set_ylabel(target_col, fontsize=9)
