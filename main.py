@@ -133,7 +133,7 @@ def apply_custom_css() -> None:
         .main-title {
             font-size: 2.0rem;
             font-weight: 600;
-            color: #1a1a2e;
+            color: #16425b;
             text-align: center;
             padding: 30px 0 8px 0;
             margin-bottom: 6px;
@@ -143,7 +143,7 @@ def apply_custom_css() -> None:
         /* 副标题 */
         .sub-title {
             text-align: center;
-            color: #6c757d;
+            color: #64748b;
             font-size: 0.95rem;
             margin-bottom: 30px;
             letter-spacing: 1px;
@@ -153,22 +153,22 @@ def apply_custom_css() -> None:
         .module-title {
             font-size: 1.1rem;
             font-weight: 600;
-            color: #1a1a2e;
-            border-left: 3px solid #3498db;
+            color: #16425b;
+            border-left: 3px solid #0e7490;
             padding-left: 14px;
             margin: 28px 0 14px 0;
         }
 
         /* 信息框 */
         .info-box {
-            background-color: #f8f9fc;
-            border: 1px solid #e8ecf1;
+            background-color: #f2f8f7;
+            border: 1px solid #d7e8e6;
             padding: 16px 20px;
             border-radius: 6px;
             margin: 10px 0;
             font-size: 0.92rem;
             line-height: 1.8;
-            color: #495057;
+            color: #475569;
         }
 
         /* 成功提示框 */
@@ -204,25 +204,27 @@ def apply_custom_css() -> None:
         /* 数据统计数字卡片 */
         .stat-card {
             background: #ffffff;
-            border: 1px solid #dee2e6;
+            border: 1px solid #e3e8e6;
+            border-top: 3px solid #0e7490;
             border-radius: 10px;
             padding: 22px 18px;
             text-align: center;
-            color: #000;
+            color: #16425b;
             min-height: 100px;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            box-shadow: 0 2px 6px rgba(14, 116, 144, 0.07);
         }
         .stat-card .stat-value {
             font-size: 2.2rem;
             font-weight: 700;
             letter-spacing: 1px;
-            color: #000;
+            color: #0e7490;
         }
         .stat-card .stat-label {
             font-size: 0.8rem;
-            color: #6c757d;
+            color: #64748b;
             margin-top: 4px;
             letter-spacing: 1px;
         }
@@ -230,7 +232,7 @@ def apply_custom_css() -> None:
         /* 功能模块卡片 */
         .func-card {
             background: #ffffff;
-            border: 1px solid #e8ecf1;
+            border: 1px solid #d7e8e6;
             border-radius: 10px;
             padding: 24px 14px;
             text-align: center;
@@ -243,19 +245,19 @@ def apply_custom_css() -> None:
             height: 100%;
         }
         .func-card:hover {
-            border-color: #adb5bd;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            transform: translateY(-1px);
+            border-color: #0e7490;
+            box-shadow: 0 4px 14px rgba(14, 116, 144, 0.14);
+            transform: translateY(-2px);
         }
         .func-card .func-name {
             font-size: 0.95rem;
             font-weight: 600;
-            color: #1a1a2e;
+            color: #16425b;
             margin-bottom: 6px;
         }
         .func-card .func-desc {
             font-size: 0.78rem;
-            color: #868e96;
+            color: #64748b;
             line-height: 1.6;
         }
 
@@ -271,7 +273,7 @@ def apply_custom_css() -> None:
             height: 36px;
             line-height: 36px;
             border-radius: 50%;
-            background: #3498db;
+            background: #0e7490;
             color: #fff;
             font-weight: 700;
             font-size: 1.0rem;
@@ -279,16 +281,16 @@ def apply_custom_css() -> None:
         }
         .workflow-step .step-text {
             font-size: 0.8rem;
-            color: #495057;
+            color: #475569;
             font-weight: 500;
         }
 
         /* 页脚 */
         .footer {
             text-align: center;
-            color: #adb5bd;
+            color: #94a3b8;
             padding: 28px 0;
-            border-top: 1px solid #e8ecf1;
+            border-top: 1px solid #d7e8e6;
             margin-top: 50px;
             font-size: 0.78rem;
             letter-spacing: 1px;
@@ -296,8 +298,8 @@ def apply_custom_css() -> None:
 
         /* ======== 侧边栏高级样式 ======== */
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-            border-right: 1px solid #edf0f5;
+            background: linear-gradient(180deg, #e9f4f3 0%, #ffffff 100%);
+            border-right: 1px solid #d7e8e6;
         }
         .sidebar-brand {
             text-align: center;
@@ -310,20 +312,20 @@ def apply_custom_css() -> None:
         .sidebar-brand-title {
             font-size: 1.05rem;
             font-weight: 600;
-            color: #1a1a2e;
+            color: #16425b;
             margin: 0;
             letter-spacing: 1.5px;
         }
         .sidebar-brand-sub {
             font-size: 0.68rem;
-            color: #aab;
+            color: #7ea0a8;
             margin: 4px 0 0 0;
             text-transform: uppercase;
             letter-spacing: 2px;
         }
         .sidebar-divider {
             height: 1px;
-            background: linear-gradient(90deg, transparent, #dee2e6, transparent);
+            background: linear-gradient(90deg, transparent, #e3e8e6, transparent);
             margin: 6px 12px;
         }
 
@@ -342,65 +344,65 @@ def apply_custom_css() -> None:
             padding: 10px 14px !important;
             border-radius: 8px !important;
             font-size: 0.9rem !important;
-            color: #4a5568 !important;
+            color: #475569 !important;
             cursor: pointer !important;
             transition: all 0.15s ease !important;
             box-sizing: border-box !important;
             margin: 0 !important;
         }
         section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-            background-color: #f0f4ff !important;
-            color: #3498db !important;
+            background-color: #e6f3f1 !important;
+            color: #0e7490 !important;
         }
         section[data-testid="stSidebar"] [data-testid="stRadio"] input[type="radio"]:checked + *,
         section[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
-            background-color: #eef5ff !important;
-            color: #2980b9 !important;
+            background-color: #d5efee !important;
+            color: #0e7490 !important;
             font-weight: 600 !important;
         }
 
         .sidebar-footer {
             font-size: 0.7rem;
-            color: #b0b8c1;
+            color: #94a3b8;
             text-align: center;
             line-height: 1.6;
         }
         .sidebar-status {
-            background: #f0f7f9;
-            border-left: 3px solid #3498db;
+            background: #e8f5f3;
+            border-left: 3px solid #0e7490;
             border-radius: 4px;
             padding: 8px 12px;
             margin-top: 10px;
         }
         .sidebar-status p {
             font-size: 0.72rem;
-            color: #2471a3;
+            color: #0e7490;
             margin: 0;
         }
 
         /* Streamlit 默认红色 → 亮蓝 */
         :root {
-            --primary-color: #3498db;
+            --primary-color: #0e7490;
         }
         .stButton > button {
-            background-color: #3498db !important;
-            border-color: #3498db !important;
+            background-color: #0e7490 !important;
+            border-color: #0e7490 !important;
             color: #fff !important;
         }
         .stTextInput > div > div > input:focus,
         .stSelectbox > div > div > div:focus {
-            border-color: #3498db !important;
-            box-shadow: 0 0 0 1px #3498db !important;
+            border-color: #0e7490 !important;
+            box-shadow: 0 0 0 1px #0e7490 !important;
         }
         input[type="checkbox"]:checked,
         input[type="radio"]:checked {
-            accent-color: #3498db;
+            accent-color: #0e7490;
         }
         .stSlider > div > div > div > div {
-            background-color: #3498db !important;
+            background-color: #0e7490 !important;
         }
         .stProgress > div > div > div {
-            background-color: #3498db !important;
+            background-color: #0e7490 !important;
         }
         </style>
         """,
@@ -566,8 +568,8 @@ def render_home_page() -> None:
         with col:
             st.markdown(
                 f'<div style="text-align:center;padding:10px;">'
-                f'<p style="font-weight:600;color:#1a1a2e;margin:0;font-size:0.9rem;">{name}</p>'
-                f'<p style="color:#868e96;margin:4px 0 0 0;font-size:0.75rem;">{desc}</p>'
+                f'<p style="font-weight:600;color:#16425b;margin:0;font-size:0.9rem;">{name}</p>'
+                f'<p style="color:#64748b;margin:4px 0 0 0;font-size:0.75rem;">{desc}</p>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
