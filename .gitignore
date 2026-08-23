@@ -1,6 +1,7 @@
 __pycache__/
 .claude/
 data/
+数据/
 *.csv
 # model.ini
 # model.py
