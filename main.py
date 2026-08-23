@@ -123,10 +123,9 @@ def apply_custom_css() -> None:
     st.markdown(
         """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap');
-
+        /* 注：不加载 Google Fonts（国内被墙），直接用系统自带中文字体 */
         html, body, [class*="css"] {
-            font-family: 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', sans-serif;
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'SimHei', 'Noto Sans SC', sans-serif;
         }
 
         /* 主标题 */
