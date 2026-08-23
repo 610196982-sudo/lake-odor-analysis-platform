@@ -1739,6 +1739,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     - 经纬度颠倒自动纠正（经度/纬度互检）
     - 经纬度缺失沿用 5 月基准自动填补
     - 坐标纠偏（点位坐标漂移超阈值时用基准坐标覆盖）
+    - 时间插值（漏测指标用历史趋势线性外推填补）
     - 点位→湖泊自动归属（POINT_LAKE_MAP）
     - 叶绿素单位转换（mg/L → μg/L）
     - 缺失字段补全
@@ -2176,6 +2177,9 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     # --- 参考表坐标纠偏：纠正点位坐标填错（漂移超阈值）的情况 ---
     result = _snap_coordinates_to_reference(result)
 
+    # --- 时间插值：填补漏测的理化指标（如 7 月漏测用 5/6 月趋势外推）---
+    result = interpolate_missing_temporal(result)
+
     # =========================================================================
     # 汇总报告
     # =========================================================================
@@ -2398,6 +2402,88 @@ def _snap_coordinates_to_reference(df: pd.DataFrame) -> pd.DataFrame:
             result.loc[lat_off, "纬度"] = ref_lat
             n = int((lon_off | lat_off).sum())
             print(f"  [信息] 坐标纠偏：点位「{point}」纠正 {n} 条偏离基准的坐标。")
+
+    return result
+
+
+def interpolate_missing_temporal(
+    df: pd.DataFrame,
+    method: str = "linear_extrapolation",
+    physical_ranges: Optional[dict] = None,
+) -> pd.DataFrame:
+    """
+    时间序列插值：填补各点位因漏测而缺失的指标值。
+
+    针对「某点位某个月份漏测、但前面月份有实测值」的情形，用该点位自身
+    的历史趋势估计：
+    - 'linear_extrapolation'：用最近两个已知值线性外推（如 7月 = 2×6月 − 5月）
+    - 'forward_fill'：用最近一个已知值填充（保守）
+
+    外推结果若超出物理合理范围（默认 REASONABLE_RANGES），回退为最近已知值，
+    避免出现负浊度、pH>14 等非法值。仅对存在物理范围的指标列进行插值。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含"采样点位"、"采样日期"及数值指标列。
+    method : str
+        插值方法，'linear_extrapolation' 或 'forward_fill'。
+    physical_ranges : Optional[dict]
+        指标物理范围映射 {列名: (下限, 上限)}，默认使用 REASONABLE_RANGES。
+
+    返回
+    ----
+    pd.DataFrame
+        填补后的数据框（返回副本，不修改入参）。
+    """
+    validate_dataframe(df)
+    if "采样点位" not in df.columns or "采样日期" not in df.columns:
+        return df
+    if method not in ("linear_extrapolation", "forward_fill"):
+        raise ValueError(
+            f"method 必须为 'linear_extrapolation' 或 'forward_fill'，当前传入：{method}"
+        )
+    ranges: dict = physical_ranges if physical_ranges is not None else REASONABLE_RANGES
+
+    result: pd.DataFrame = df.copy()
+    month: pd.Series = result["采样日期"].apply(_extract_month_from_date)
+    # 仅插值存在物理范围的指标列
+    interp_cols: list = [c for c in result.columns if c in ranges]
+
+    n_filled: int = 0
+    for point, grp in result.groupby("采样点位"):
+        # 按月份升序排列该点位的记录
+        grp_month = month[grp.index]
+        order = grp_month.argsort(kind="stable")
+        sorted_idx = grp.index[order]
+
+        for col in interp_cols:
+            vals = pd.to_numeric(
+                result.loc[sorted_idx, col], errors="coerce"
+            ).values.astype(float)
+
+            for i in range(len(vals)):
+                if not np.isnan(vals[i]):
+                    continue
+                # 取该点位此前已测到的值（按时间顺序）
+                prev = vals[:i][~np.isnan(vals[:i])]
+                if prev.size == 0:
+                    continue  # 无历史值，无法插值（如该点位该指标一直未测）
+
+                fill_val = float(prev[-1])  # 默认：最近已知值（前向填充）
+                if method == "linear_extrapolation" and prev.size >= 2:
+                    extrapolated = 2 * prev[-1] - prev[-2]
+                    lo, hi = ranges[col]
+                    if lo <= extrapolated <= hi:
+                        fill_val = extrapolated  # 物理约束通过则用外推值
+                    # 越界则保持前向填充值
+                vals[i] = fill_val
+                n_filled += 1
+
+            result.loc[sorted_idx, col] = vals
+
+    if n_filled:
+        print(f"  [信息] 时间插值：已填补 {n_filled} 个缺失值（方法：{method}）。")
 
     return result
 
