@@ -1102,10 +1102,10 @@ from process_data import POINT_COORDS  # noqa: E402
 _ODOR_LIGHT: float = 10.0
 _ODOR_SEVERE: float = 50.0
 
-# 风险等级配色：正常（绿）/ 轻度（黄）/ 严重（红）/ 未知（灰）
+# 风险等级配色：正常（绿）/ 轻度（蓝）/ 严重（红）/ 未知（灰）
 _ODOR_LEVEL_COLORS: dict = {
     "正常":     "#2e8b57",
-    "轻度超标": "#e6a817",
+    "轻度超标": "#2b7bba",
     "严重超标": "#c0392b",
     "未知":     "#9aa5b1",
 }
