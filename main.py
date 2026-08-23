@@ -799,15 +799,24 @@ def render_data_import_page() -> None:
 
         # --- 数据导出 ---
         st.markdown('<div class="module-title">步骤四：导出数据</div>', unsafe_allow_html=True)
-        export_name = st.text_input("导出文件名", value="water_quality_data.csv")
-        if st.button("💾 导出为 CSV 文件"):
-            export_path = export_dataset_to_csv(
-                df,
-                export_name,
+        import io as _io
+        col_csv, col_xlsx = st.columns(2)
+        with col_csv:
+            st.download_button(
+                label="📥 下载 CSV",
+                data=df.to_csv(index=False).encode("utf-8-sig"),
+                file_name="清洗后水质数据.csv",
+                mime="text/csv",
             )
-            st.markdown(
-                f'<div class="success-box">✅ 数据已导出至：<code>{export_path}</code></div>',
-                unsafe_allow_html=True,
+        with col_xlsx:
+            buf = _io.BytesIO()
+            with pd.ExcelWriter(buf, engine="openpyxl") as writer:
+                df.to_excel(writer, index=False, sheet_name="数据")
+            st.download_button(
+                label="📥 下载 Excel",
+                data=buf.getvalue(),
+                file_name="清洗后水质数据.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
 
 
@@ -1019,15 +1028,24 @@ def render_visualization_page() -> None:
         else:
             st.pyplot(fig)
 
-    # --- 图表导出（仅 matplotlib 图支持保存为高清 PNG；plotly 图可用右上角工具栏导出） ---
+    # --- 图表导出（直接下载到浏览器：matplotlib → PNG，plotly → 交互式 HTML） ---
     if fig is not None and not is_plotly_figure(fig):
-        save_name = st.text_input("图表保存文件名", value=f"{viz_type}.png")
-        if st.button("💾 保存图表为高清图片"):
-            save_path = save_figure(fig, save_name, dpi=300)
-            st.markdown(
-                f'<div class="success-box">✅ 图表已保存至：<code>{save_path}</code></div>',
-                unsafe_allow_html=True,
-            )
+        import io as _io
+        _buf = _io.BytesIO()
+        fig.savefig(_buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
+        st.download_button(
+            label="📥 下载图表（高清 PNG）",
+            data=_buf.getvalue(),
+            file_name=f"{viz_type}.png",
+            mime="image/png",
+        )
+    elif fig is not None and is_plotly_figure(fig):
+        st.download_button(
+            label="📥 下载地图（交互式 HTML）",
+            data=fig.to_html(),
+            file_name=f"{viz_type}.html",
+            mime="text/html",
+        )
 
 
 # ============================================================================
