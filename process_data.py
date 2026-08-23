@@ -60,7 +60,7 @@ COLUMN_DTYPES: dict = {
 # 避免把这些非驱动项当作嗅味物质的环境驱动因子。
 DRIVER_COLUMNS: list = [
     "水温", "DO", "pH", "浊度", "电导率", "TN", "TP", "NH3-N", "CODMn",
-    "叶绿素a", "藻密度", "fDOM", "PC",
+    "叶绿素a", "藻密度", "fDOM", "PC", "氧化还原电位", "TSS",
 ]
 
 
