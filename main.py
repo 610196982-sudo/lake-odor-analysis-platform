@@ -84,6 +84,7 @@ from model import (
     predict_odor_risk,
     run_anova_analysis,
     evaluate_model_cv,
+    RISK_LEVELS,
 )
 
 
