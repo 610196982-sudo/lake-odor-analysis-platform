@@ -1123,30 +1123,85 @@ _ODOR_LEVEL_COLORS: dict = {
     "未知":     "#9aa5b1",
 }
 
-# CartoDB Voyager 彩色简洁底图（Mapbox GL 样式）：彩色但无详细行政区划/地形标注，
-# 避免底图过细盖住采样点位气泡。免费瓦片、无需 token。
-_MAPBOX_VOYAGER_STYLE: dict = {
+# 高德彩色简洁底图（Mapbox GL 样式）：国内直连、免费、无需 token。
+# 原先用 CartoDB Voyager（basemaps.cartocdn.com），国内网络常被拦截导致组员端底图空白，
+# 故改为高德瓦片源。注意：高德瓦片为 GCJ-02（火星坐标），点位需先用
+# _wgs84_to_gcj02 由 WGS-84 偏移对齐，否则点位会与底图错位数百米。
+_MAPBOX_AMAP_STYLE: dict = {
     "version": 8,
     "sources": {
-        "carto-voyager": {
+        "amap": {
             "type": "raster",
             "tiles": [
-                "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+                "https://wprd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scl=1&style=7&x={x}&y={y}&z={z}",
             ],
             "tileSize": 256,
-            "attribution": "© OpenStreetMap contributors © CARTO",
+            "attribution": "© 高德地图",
         }
     },
     "layers": [
         {
-            "id": "carto-voyager-layer",
+            "id": "amap-layer",
             "type": "raster",
-            "source": "carto-voyager",
+            "source": "amap",
             "minzoom": 0,
             "maxzoom": 22,
         }
     ],
 }
+
+
+def _wgs84_to_gcj02(lon: float, lat: float) -> Tuple[float, float]:
+    """
+    WGS-84（GPS 实测坐标）→ GCJ-02（火星坐标）偏移转换。
+
+    高德/腾讯等国内底图使用 GCJ-02 坐标系，与 WGS-84 存在约几百米的系统性偏移。
+    源数据的实测经纬度为 WGS-84，直接叠加到高德底图上会整体偏移，故绘制前转换。
+
+    参数
+    ----
+    lon, lat : float
+        WGS-84 经纬度。
+
+    返回
+    ----
+    Tuple[float, float]
+        转换后的 (经度, 纬度)。
+    """
+    import math
+
+    a = 6378245.0            # 长半轴（米）
+    ee = 0.00669342162296594323  # 第一偏心率平方
+
+    def _out_of_china(x: float, y: float) -> bool:
+        return not (73.66 < x < 135.05 and 3.86 < y < 53.55)
+
+    def _transform_lat(x: float, y: float) -> float:
+        ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
+        ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+        ret += (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
+        ret += (160.0 * math.sin(y / 12.0 * math.pi) + 320.0 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+        return ret
+
+    def _transform_lon(x: float, y: float) -> float:
+        ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+        ret += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+        ret += (20.0 * math.sin(x * math.pi) + 40.0 * math.sin(x / 3.0 * math.pi)) * 2.0 / 3.0
+        ret += (150.0 * math.sin(x / 12.0 * math.pi) + 300.0 * math.sin(x / 30.0 * math.pi)) * 2.0 / 3.0
+        return ret
+
+    if _out_of_china(lon, lat):
+        return lon, lat
+
+    dlat = _transform_lat(lon - 105.0, lat - 35.0)
+    dlon = _transform_lon(lon - 105.0, lat - 35.0)
+    radlat = lat / 180.0 * math.pi
+    magic = math.sin(radlat)
+    magic = 1 - ee * magic * magic
+    sqrtmagic = math.sqrt(magic)
+    dlat = (dlat * 180.0) / ((a * (1 - ee)) / (magic * sqrtmagic) * math.pi)
+    dlon = (dlon * 180.0) / (a / sqrtmagic * math.cos(radlat) * math.pi)
+    return lon + dlon, lat + dlat
 
 
 def _classify_odor_level(value: Optional[float]) -> str:
@@ -1336,8 +1391,19 @@ def plot_gis_map(
                 "叶绿素a", "藻密度", "电导率", "GSM", "2-MIB",
             ) if c in geo.columns and c != odor_col
         ]
+        # 高德底图为 GCJ-02（火星坐标），点位与中心需由 WGS-84 偏移对齐，
+        # 否则点位会与底图错位数百米。
+        _gcj = [
+            _wgs84_to_gcj02(float(lon), float(lat))
+            for lon, lat in zip(geo["经度"], geo["纬度"])
+        ]
+        geo_gcj = geo.copy()
+        geo_gcj["经度"] = [g[0] for g in _gcj]
+        geo_gcj["纬度"] = [g[1] for g in _gcj]
+        _center_lon, _center_lat = _wgs84_to_gcj02(center[1], center[0])
+
         fig = px.scatter_mapbox(
-            geo,
+            geo_gcj,
             lat="纬度",
             lon="经度",
             color="风险等级",
@@ -1352,13 +1418,13 @@ def plot_gis_map(
                 **{c: ":.3f" for c in hover_cols},
             },
             zoom=zoom,
-            center={"lat": center[0], "lon": center[1]},
+            center={"lat": _center_lat, "lon": _center_lon},
             mapbox_style="white-bg",
             title=title,
             category_orders={"风险等级": ["正常", "轻度超标", "严重超标", "未知"]},
         )
-        # 用 CartoDB Voyager 彩色简洁底图覆盖默认底图（彩色但无详细行政区划/地形）
-        fig.update_layout(mapbox=dict(style=_MAPBOX_VOYAGER_STYLE))
+        # 用高德彩色简洁底图覆盖默认底图（国内直连，避免组员端底图空白）
+        fig.update_layout(mapbox=dict(style=_MAPBOX_AMAP_STYLE))
         fig.update_layout(
             margin={"r": 0, "t": 60, "l": 0, "b": 0},
             legend=dict(
