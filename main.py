@@ -1308,7 +1308,11 @@ def _param_slider_input(key, label, min_value, max_value, value, step, help_text
     """参数输入控件：滑块（快速拖动调节）+ 精确输入框（直接键入数值）。
 
     滑块负责快速调节；右侧输入框显示清晰、可编辑的精确值，解决「数值
-    颜色与滑块一致、看不清当前取值」的问题。二者通过 session_state 双向同步。
+    颜色与滑块一致、看不清当前取值」的问题。二者通过 on_change 回调互写
+    对方的 session_state 实现双向同步。
+
+    注意：控件不传 value 参数（默认值由 session_state 初始化提供），
+    避免 Streamlit 对「widget 默认值与 Session State 重复设置」的告警。
 
     返回
     ----
@@ -1318,19 +1322,17 @@ def _param_slider_input(key, label, min_value, max_value, value, step, help_text
     s_key = f"{key}_slider"
     n_key = f"{key}_number"
 
-    # 仅首次进入时初始化默认值；之后由用户操作与回调维护
-    if key not in st.session_state:
+    # 首次进入时分别初始化两个控件的默认值
+    if s_key not in st.session_state:
         st.session_state[s_key] = value
+    if n_key not in st.session_state:
         st.session_state[n_key] = value
-        st.session_state[key] = value
 
     def _sync_from_slider():
         st.session_state[n_key] = st.session_state[s_key]
-        st.session_state[key] = st.session_state[s_key]
 
     def _sync_from_number():
         st.session_state[s_key] = st.session_state[n_key]
-        st.session_state[key] = st.session_state[n_key]
 
     col_slider, col_input = st.columns([3.4, 1])
     with col_slider:
@@ -1338,7 +1340,6 @@ def _param_slider_input(key, label, min_value, max_value, value, step, help_text
             label,
             min_value=min_value,
             max_value=max_value,
-            value=st.session_state[s_key],
             step=step,
             format=fmt,
             help=help_text,
@@ -1350,14 +1351,13 @@ def _param_slider_input(key, label, min_value, max_value, value, step, help_text
             "精确值",
             min_value=min_value,
             max_value=max_value,
-            value=st.session_state[n_key],
             step=step,
             format=fmt,
             key=n_key,
             on_change=_sync_from_number,
             label_visibility="collapsed",
         )
-    return st.session_state[key]
+    return st.session_state[s_key]
 
 
 # ============================================================================
