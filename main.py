@@ -76,6 +76,7 @@ from visualize import (
     plot_dual_axis,
     is_plotly_figure,
     save_figure,
+    figure_to_fullscreen_html,
 )
 from model import (
     run_correlation_analysis,
@@ -1042,7 +1043,7 @@ def render_visualization_page() -> None:
     elif fig is not None and is_plotly_figure(fig):
         st.download_button(
             label="📥 下载地图（交互式 HTML）",
-            data=fig.to_html(),
+            data=figure_to_fullscreen_html(fig),
             file_name=f"{viz_type}.html",
             mime="text/html",
         )

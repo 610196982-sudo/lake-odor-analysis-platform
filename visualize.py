@@ -1584,6 +1584,37 @@ def save_figure(
     return file_path
 
 
+def figure_to_fullscreen_html(fig, height: str = "95vh") -> str:
+    """
+    将 plotly Figure 导出为「填满浏览器视口」的独立 HTML 字符串。
+
+    导出前移除 figure 的固定像素高度（如 GIS 地图的 height=580），改用视口
+    相对高度（默认 95vh），避免在宽屏浏览器中独立打开 .html 时高度塌陷、
+    下方留大片空白的问题。
+
+    参数
+    ----
+    fig : plotly.graph_objects.Figure
+        待导出的 plotly 图表（含 GIS 地图）。
+    height : str
+        导出后的图表高度，默认 '95vh'（占浏览器视口高度的 95%）。
+
+    返回
+    ----
+    str
+        完整可独立打开的 HTML 字符串。
+    """
+    import copy
+
+    _fig = copy.deepcopy(fig)
+    _fig.update_layout(height=None)
+    return _fig.to_html(
+        full_html=True,
+        include_plotlyjs="cdn",
+        default_height=height,
+    )
+
+
 # ============================================================================
 # 模块主入口（测试用）
 # ============================================================================
