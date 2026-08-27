@@ -1301,6 +1301,66 @@ def render_analysis_page() -> None:
 
 
 # ============================================================================
+# 参数输入辅助控件：滑块 + 精确值输入框（双向同步）
+# ============================================================================
+
+def _param_slider_input(key, label, min_value, max_value, value, step, help_text, fmt=None):
+    """参数输入控件：滑块（快速拖动调节）+ 精确输入框（直接键入数值）。
+
+    滑块负责快速调节；右侧输入框显示清晰、可编辑的精确值，解决「数值
+    颜色与滑块一致、看不清当前取值」的问题。二者通过 session_state 双向同步。
+
+    返回
+    ----
+    float
+        当前参数值（滑块与输入框同步后一致）。
+    """
+    s_key = f"{key}_slider"
+    n_key = f"{key}_number"
+
+    # 仅首次进入时初始化默认值；之后由用户操作与回调维护
+    if key not in st.session_state:
+        st.session_state[s_key] = value
+        st.session_state[n_key] = value
+        st.session_state[key] = value
+
+    def _sync_from_slider():
+        st.session_state[n_key] = st.session_state[s_key]
+        st.session_state[key] = st.session_state[s_key]
+
+    def _sync_from_number():
+        st.session_state[s_key] = st.session_state[n_key]
+        st.session_state[key] = st.session_state[n_key]
+
+    col_slider, col_input = st.columns([3.4, 1])
+    with col_slider:
+        st.slider(
+            label,
+            min_value=min_value,
+            max_value=max_value,
+            value=st.session_state[s_key],
+            step=step,
+            format=fmt,
+            help=help_text,
+            key=s_key,
+            on_change=_sync_from_slider,
+        )
+    with col_input:
+        st.number_input(
+            "精确值",
+            min_value=min_value,
+            max_value=max_value,
+            value=st.session_state[n_key],
+            step=step,
+            format=fmt,
+            key=n_key,
+            on_change=_sync_from_number,
+            label_visibility="collapsed",
+        )
+    return st.session_state[key]
+
+
+# ============================================================================
 # 页面：风险预警评估
 # ============================================================================
 
@@ -1350,85 +1410,47 @@ def render_risk_warning_page() -> None:
 
     with col1:
         st.markdown("**🌡️ 物理指标**")
-        water_temp = st.slider(
-            "水温（℃）",
-            min_value=0.0,
-            max_value=40.0,
-            value=25.0,
-            step=0.5,
-            help="湖库表层水温，范围 0~40℃。",
+        water_temp = _param_slider_input(
+            "water_temp", "水温（℃）", 0.0, 40.0, 25.0, 0.5,
+            "湖库表层水温，范围 0~40℃。",
         )
-        turbidity = st.slider(
-            "浊度（NTU）",
-            min_value=0.0,
-            max_value=200.0,
-            value=20.0,
-            step=1.0,
-            help="浊度，反映水体中悬浮颗粒物含量。",
+        turbidity = _param_slider_input(
+            "turbidity", "浊度（NTU）", 0.0, 200.0, 20.0, 1.0,
+            "浊度，反映水体中悬浮颗粒物含量。",
         )
-        do_val = st.slider(
-            "溶解氧 DO（mg/L）",
-            min_value=0.1,
-            max_value=18.0,
-            value=6.0,
-            step=0.1,
-            help="溶解氧浓度。夏季高温时通常较低。",
+        do_val = _param_slider_input(
+            "do_val", "溶解氧 DO（mg/L）", 0.1, 18.0, 6.0, 0.1,
+            "溶解氧浓度。夏季高温时通常较低。",
         )
 
     with col2:
         st.markdown("**🧪 化学指标**")
-        ph = st.slider(
-            "pH 值",
-            min_value=4.0,
-            max_value=10.5,
-            value=7.5,
-            step=0.1,
-            help="水体酸碱度。藻类大量增殖时 pH 可升高至 8.5 以上。",
+        ph = _param_slider_input(
+            "ph", "pH 值", 4.0, 10.5, 7.5, 0.1,
+            "水体酸碱度。藻类大量增殖时 pH 可升高至 8.5 以上。",
         )
-        tn = st.slider(
-            "总氮 TN（mg/L）",
-            min_value=0.01,
-            max_value=10.0,
-            value=1.5,
-            step=0.1,
-            help="总氮浓度，反映水体氮污染水平。",
+        tn = _param_slider_input(
+            "tn", "总氮 TN（mg/L）", 0.01, 10.0, 1.5, 0.1,
+            "总氮浓度，反映水体氮污染水平。",
         )
-        tp = st.slider(
-            "总磷 TP（mg/L）",
-            min_value=0.001,
-            max_value=2.0,
-            value=0.08,
-            step=0.001,
-            format="%.3f",
-            help="总磷浓度。磷通常是淡水湖库藻类生长的限制因子。",
+        tp = _param_slider_input(
+            "tp", "总磷 TP（mg/L）", 0.001, 2.0, 0.08, 0.001,
+            "总磷浓度。磷通常是淡水湖库藻类生长的限制因子。", fmt="%.3f",
         )
 
     with col3:
         st.markdown("**🧬 生物与综合指标**")
-        nh3n = st.slider(
-            "氨氮 NH₃-N（mg/L）",
-            min_value=0.005,
-            max_value=5.0,
-            value=0.25,
-            step=0.005,
-            format="%.3f",
-            help="氨氮浓度，反映含氮有机物分解程度。",
+        nh3n = _param_slider_input(
+            "nh3n", "氨氮 NH₃-N（mg/L）", 0.005, 5.0, 0.25, 0.005,
+            "氨氮浓度，反映含氮有机物分解程度。", fmt="%.3f",
         )
-        codmn = st.slider(
-            "高锰酸盐指数 CODMn（mg/L）",
-            min_value=0.5,
-            max_value=30.0,
-            value=5.0,
-            step=0.5,
-            help="反映水体中有机物污染程度的综合指标。",
+        codmn = _param_slider_input(
+            "codmn", "高锰酸盐指数 CODMn（mg/L）", 0.5, 30.0, 5.0, 0.5,
+            "反映水体中有机物污染程度的综合指标。",
         )
-        chl_a = st.slider(
-            "叶绿素a（μg/L）",
-            min_value=0.1,
-            max_value=300.0,
-            value=25.0,
-            step=1.0,
-            help="叶绿素a 浓度，反映浮游植物（藻类）的生物量水平。",
+        chl_a = _param_slider_input(
+            "chl_a", "叶绿素a（μg/L）", 0.1, 300.0, 25.0, 1.0,
+            "叶绿素a 浓度，反映浮游植物（藻类）的生物量水平。",
         )
 
     # --- 预测设置 ---
