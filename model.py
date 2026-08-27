@@ -80,6 +80,15 @@ RISK_THRESHOLDS: list = [
     (float("inf"), "🔴 严重风险"),
 ]
 
+# 风险预警模型使用的核心指标（9 项）及其固定顺序。
+# 该顺序必须与 predict_odor_risk 的 9 个输入参数（water_temp, ph, do_val,
+# turbidity, tn, tp, nh3n, codmn, chl_a）一一对应。训练与预测共用同一顺序，
+# 避免 scaler.transform 出现「X has N features, but Scaler is expecting M
+# features」的特征数不匹配报错。
+_RISK_MODEL_FEATURES: list = [
+    "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn", "叶绿素a",
+]
+
 
 # ============================================================================
 # 参数校验辅助函数
@@ -430,6 +439,7 @@ def predict_odor_risk(
     odor_type: str = "GSM",
     model: Optional[LinearRegression] = None,
     scaler: Optional[StandardScaler] = None,
+    feature_names: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     基于输入的水质理化指标预测嗅味物质浓度并评估超标风险等级。
@@ -462,6 +472,10 @@ def predict_odor_risk(
         预训练的线性回归模型，为 None 时使用经验公式。
     scaler : Optional[StandardScaler]
         与模型配套的标准化器。
+    feature_names : Optional[List[str]]
+        模型/标准化器训练时使用的特征列顺序。传入后按此顺序拼装特征，确保与
+        scaler 训练时的特征数、顺序严格一致；为 None 时默认使用
+        _RISK_MODEL_FEATURES（9 项核心指标）。
 
     返回
     ----
@@ -492,7 +506,19 @@ def predict_odor_risk(
 
     # --- 预测嗅味物质浓度 ---
     if model is not None:
-        features = np.array([[water_temp, ph, do_val, turbidity, tn, tp, nh3n, codmn, chl_a]])
+        # 训练特征名 → 输入值 的映射（与 _RISK_MODEL_FEATURES 一一对应）。
+        _feature_values: dict = {
+            "水温": water_temp, "pH": ph, "DO": do_val, "浊度": turbidity,
+            "TN": tn, "TP": tp, "NH3-N": nh3n, "CODMn": codmn, "叶绿素a": chl_a,
+        }
+        order: List[str] = feature_names if feature_names is not None else _RISK_MODEL_FEATURES
+        _missing = [f for f in order if f not in _feature_values]
+        if _missing:
+            raise ValueError(
+                f"模型包含风险预警输入中不存在的特征 {_missing}，无法对齐。"
+                f"请用 {_RISK_MODEL_FEATURES} 中的指标训练模型。"
+            )
+        features = np.array([[_feature_values[f] for f in order]], dtype=float)
         if scaler is not None:
             features = scaler.transform(features)
         predicted_concentration = float(model.predict(features)[0])
@@ -541,6 +567,44 @@ def predict_odor_risk(
         "预测模型": "经验公式估算" if model is None else "多元线性回归模型",
     }
     return result
+
+
+def train_risk_model(
+    df: pd.DataFrame,
+    odor_type: str = "GSM",
+) -> Tuple[Optional[LinearRegression], Optional[StandardScaler], List[str]]:
+    """
+    用固定的 9 项核心指标训练风险预警用的线性回归模型。
+
+    该函数确保训练特征与 predict_odor_risk 的 9 个输入严格对齐，避免「驱动因子
+    分析」页面自由选择特征后，其 scaler 特征数与风险预警输入不一致而触发
+    「X has N features, but Scaler is expecting M features」报错。
+
+    参数
+    ----
+    df : pd.DataFrame
+        监测数据集。
+    odor_type : str
+        目标嗅味物质，'GSM' 或 '2-MIB'。
+
+    返回
+    ----
+    Tuple[Optional[LinearRegression], Optional[StandardScaler], List[str]]
+        (模型, 标准化器, 实际使用的特征列)。样本/特征不足时返回 (None, None, [])。
+    """
+    cols: List[str] = [c for c in _RISK_MODEL_FEATURES if c in df.columns]
+    if len(cols) < 2:
+        return None, None, []
+    if odor_type not in df.columns or df[odor_type].isna().all():
+        return None, None, []
+    try:
+        result = build_linear_regression_model(
+            df, target_col=odor_type, predictor_cols=cols,
+        )
+    except Exception as e:  # 样本量不足 / 特征数值异常等
+        print(f"  [信息] 风险预警模型训练失败（{e}），改用经验公式。")
+        return None, None, []
+    return result["模型对象"], result["标准化器"], cols
 
 
 # ============================================================================

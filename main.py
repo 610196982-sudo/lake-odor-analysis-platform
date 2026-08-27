@@ -83,6 +83,7 @@ from model import (
     build_linear_regression_model,
     analyze_feature_importance_rf,
     predict_odor_risk,
+    train_risk_model,
     run_anova_analysis,
     evaluate_model_cv,
     RISK_LEVELS,
@@ -1466,9 +1467,9 @@ def render_risk_warning_page() -> None:
         )
     with col_b:
         use_trained_model = st.checkbox(
-            "使用已训练的回归模型进行预测",
+            "使用数据训练的回归模型进行预测",
             value=False,
-            help="若在「驱动因子分析」页面已训练模型，可勾选此项使用模型预测。"
+            help="勾选后用当前导入数据、基于 9 项核心理化指标训练回归模型进行预测；"
             "否则使用内置经验公式。",
         )
 
@@ -1477,11 +1478,11 @@ def render_risk_warning_page() -> None:
         with st.spinner("正在计算嗅味物质浓度并评估风险等级..."):
             model = None
             scaler = None
+            feature_names = None
             if use_trained_model:
-                model = st.session_state.get("trained_model")
-                scaler = st.session_state.get("scaler")
+                model, scaler, feature_names = train_risk_model(df, odor_type)
                 if model is None:
-                    st.warning("⚠️ 尚未训练模型，将使用经验公式进行预测。")
+                    st.warning("⚠️ 当前数据不足以训练回归模型（样本或指标不足），已改用经验公式预测。")
 
             risk_result = predict_odor_risk(
                 water_temp=water_temp,
@@ -1496,6 +1497,7 @@ def render_risk_warning_page() -> None:
                 odor_type=odor_type,
                 model=model,
                 scaler=scaler,
+                feature_names=feature_names,
             )
 
         # --- 显示预测结果 ---
