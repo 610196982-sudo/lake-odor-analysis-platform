@@ -10,16 +10,15 @@
 ==============================================================================
 """
 
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
-from scipy.stats import pearsonr, spearmanr, kendalltau, f_oneway, kruskal
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-from sklearn.preprocessing import StandardScaler
 from typing import Optional, List, Dict, Any, Tuple
 import warnings
+
+# 注意：scipy / scikit-learn 为重型依赖（import 耗时长），已改为按需在函数内
+# 惰性导入，以加速 Streamlit Cloud 冷启动（唤醒）。切勿改回模块顶层导入。
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -136,6 +135,8 @@ def run_correlation_analysis(
     pd.DataFrame
         包含相关系数、p 值、显著性标记和样本量的结果表。
     """
+    from scipy.stats import pearsonr, spearmanr, kendalltau
+
     # --- 参数校验 ---
     _validate_df(df)
     valid_methods: set = {"pearson", "spearman", "kendall"}
@@ -286,6 +287,11 @@ def build_linear_regression_model(
     Dict[str, Any]
         包含模型对象、评估指标、回归系数等信息的字典。
     """
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import LinearRegression
+    from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+
     _validate_df(df)
     _validate_numeric_columns(df, [target_col] + predictor_cols)
     if test_size <= 0 or test_size >= 1:
@@ -373,6 +379,8 @@ def analyze_feature_importance_rf(
     pd.DataFrame
         包含各特征重要性得分和排名的数据框。
     """
+    from sklearn.ensemble import RandomForestRegressor
+
     _validate_df(df)
     _validate_numeric_columns(df, [target_col] + predictor_cols)
     if n_estimators < 10:
@@ -564,6 +572,8 @@ def run_anova_analysis(
     Dict[str, Any]
         包含 F 统计量、p 值、各组描述统计等信息。
     """
+    from scipy.stats import f_oneway, kruskal
+
     _validate_df(df)
     if value_col not in df.columns:
         raise ValueError(f"列 '{value_col}' 在数据中不存在。")
@@ -648,6 +658,10 @@ def evaluate_model_cv(
     Dict[str, Any]
         包含各折 R² 得分、平均 R² 和标准差等信息的字典。
     """
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.linear_model import LinearRegression
+    from sklearn.model_selection import cross_val_score
+
     _validate_df(df)
     _validate_numeric_columns(df, [target_col] + predictor_cols)
 

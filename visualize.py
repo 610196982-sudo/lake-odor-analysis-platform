@@ -17,7 +17,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.font_manager import FontProperties
-import seaborn as sns
+import functools
 from typing import Optional, List, Tuple, Union
 import warnings
 
@@ -264,29 +264,42 @@ NATURE_PALETTE: list = [
     "#A69C8E",  # 暖灰
 ]
 
-# 设置 seaborn 学术风格
-# 注意：sns.set_style / sns.set_context 会重置 font.sans-serif 与各项字号，
-# 把上方 _setup_chinese_font() 的中文字体设置覆盖掉，导致中文显示为方框。
-# 因此必须在 seaborn 调用之后，重新应用中文字体与学术字号配置。
-sns.set_style("ticks")
-sns.set_palette(sns.color_palette(NATURE_PALETTE))
-sns.set_context("paper", font_scale=1.0)
+def _apply_chinese_font() -> None:
+    """重新应用中文字体与学术字号（防止被 seaborn 风格覆盖导致中文方框）。"""
+    plt.rcParams["font.family"] = "sans-serif"
+    # 检测到的字体置顶，其后接完整回退链，最后以 sans-serif 兜底
+    plt.rcParams["font.sans-serif"] = (
+        ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
+        + _CJK_FONT_STACK
+        + ["sans-serif"]
+    )
+    plt.rcParams["axes.unicode_minus"] = False
+    plt.rcParams["font.size"] = 9
+    plt.rcParams["axes.titlesize"] = 12
+    plt.rcParams["axes.labelsize"] = 10
+    plt.rcParams["legend.fontsize"] = 8
+    plt.rcParams["xtick.labelsize"] = 8
+    plt.rcParams["ytick.labelsize"] = 8
 
-# --- 重新应用中文字体与学术字号（防止被 seaborn 覆盖）---
-plt.rcParams["font.family"] = "sans-serif"
-# 检测到的字体置顶，其后接完整回退链，最后以 sans-serif 兜底
-plt.rcParams["font.sans-serif"] = (
-    ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
-    + _CJK_FONT_STACK
-    + ["sans-serif"]
-)
-plt.rcParams["axes.unicode_minus"] = False
-plt.rcParams["font.size"] = 9
-plt.rcParams["axes.titlesize"] = 12
-plt.rcParams["axes.labelsize"] = 10
-plt.rcParams["legend.fontsize"] = 8
-plt.rcParams["xtick.labelsize"] = 8
-plt.rcParams["ytick.labelsize"] = 8
+
+@functools.lru_cache(maxsize=1)
+def _seaborn():
+    """惰性加载 seaborn 并应用学术风格，延迟到首次绘制 seaborn 图时执行。
+
+    seaborn 依赖 scipy，且 sns.set_style 会重置中文字体；这里在设置风格后
+    立即调用 _apply_chinese_font() 恢复中文字体，避免中文显示为方框。
+    惰性导入可显著缩短 Streamlit Cloud 冷启动（唤醒）时间。
+    """
+    import seaborn as sns
+    sns.set_style("ticks")
+    sns.set_palette(sns.color_palette(NATURE_PALETTE))
+    sns.set_context("paper", font_scale=1.0)
+    _apply_chinese_font()
+    return sns
+
+
+# 模块导入时即应用中文字体，保证非 seaborn 图表（matplotlib 直绘）中文正常
+_apply_chinese_font()
 
 
 # ============================================================================
@@ -495,7 +508,7 @@ def plot_boxplot_comparison(
 
     # --- 绘制箱线图 ---
     if hue_col is not None:
-        sns.boxplot(
+        _seaborn().boxplot(
             data=df,
             x=x_col,
             y=y_col,
@@ -512,7 +525,7 @@ def plot_boxplot_comparison(
             },
         )
     else:
-        sns.boxplot(
+        _seaborn().boxplot(
             data=df,
             x=x_col,
             y=y_col,
@@ -530,7 +543,7 @@ def plot_boxplot_comparison(
 
     # --- 叠加散点（展示数据分布密度） ---
     if hue_col is not None:
-        sns.stripplot(
+        _seaborn().stripplot(
             data=df,
             x=x_col,
             y=y_col,
@@ -633,7 +646,7 @@ def plot_correlation_heatmap(
 
     # --- 绘制热力图 ---
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=0)
-    heatmap = sns.heatmap(
+    heatmap = _seaborn().heatmap(
         corr_matrix,
         mask=mask,
         annot=annot,
