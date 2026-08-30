@@ -115,6 +115,10 @@ def init_session_state() -> None:
     if "data_source" not in st.session_state:
         st.session_state["data_source"] = "尚未导入数据"
 
+    # 初始化当前页面（用于首页核心功能卡片跳转与侧边栏导航同步）
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "系统首页"
+
 
 # ============================================================================
 # CSS 自定义样式
@@ -392,6 +396,23 @@ def apply_custom_css() -> None:
             border-color: #0e7490 !important;
             color: #fff !important;
         }
+        /* 首页核心功能卡片按钮（默认 secondary 按钮，样式化为白色卡片） */
+        .stButton > button[kind="secondary"] {
+            background: #ffffff !important;
+            border: 1px solid #d7e8e6 !important;
+            color: #16425b !important;
+            border-radius: 10px;
+            min-height: 72px;
+            font-weight: 600;
+            box-shadow: none;
+            transition: all 0.25s ease;
+        }
+        .stButton > button[kind="secondary"]:hover {
+            border-color: #0e7490 !important;
+            color: #0e7490 !important;
+            box-shadow: 0 4px 14px rgba(14, 116, 144, 0.14);
+            transform: translateY(-2px);
+        }
         .stTextInput > div > div > input:focus,
         .stSelectbox > div > div > div:focus {
             border-color: #0e7490 !important;
@@ -501,36 +522,50 @@ def render_home_page() -> None:
                 )
         st.caption("尚未导入数据。请通过左侧导航进入「数据导入」上传您的监测数据。")
 
-    # --- 功能模块 ---
+    # --- 功能模块（可点击跳转） ---
     st.markdown('<div class="module-title">核心功能</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<p style="color:#64748b;font-size:0.82rem;margin-top:-6px;">'
+        '点击卡片即可进入对应功能页面。</p>',
+        unsafe_allow_html=True,
+    )
 
     modules = [
         {
             "name": "数据导入",
-            "desc": "多格式自动识别 · 列名智能映射<br>转置格式检测 · 数据验证",
+            "icon": "📥",
+            "desc": "多格式识别 · 列名映射 · 数据验证",
         },
         {
             "name": "时空特征可视化",
-            "desc": "时间序列 · 箱线对比<br>热力图 · 散点拟合 · 多面板联动",
+            "icon": "🗺️",
+            "desc": "时间序列 · 箱线对比 · 热力图 · 散点拟合",
         },
         {
             "name": "驱动因子分析",
-            "desc": "Pearson / Spearman 相关<br>多元线性回归 · 随机森林排序",
+            "icon": "🧬",
+            "desc": "相关分析 · 回归 · 随机森林排序",
         },
         {
             "name": "风险预警评估",
-            "desc": "理化指标实时输入<br>嗅味浓度预测 · 四级定级 · 处理建议",
+            "icon": "⚠️",
+            "desc": "浓度预测 · 四级定级 · 处理建议",
         },
     ]
 
     cols = st.columns(4)
     for col, mod in zip(cols, modules):
         with col:
+            if st.button(
+                f'{mod["icon"]} {mod["name"]}',
+                key=f"home_nav_{mod['name']}",
+                use_container_width=True,
+            ):
+                st.session_state["current_page"] = mod["name"]
+                st.rerun()
             st.markdown(
-                f'<div class="func-card">'
-                f'<div class="func-name">{mod["name"]}</div>'
-                f'<div class="func-desc">{mod["desc"]}</div>'
-                f'</div>',
+                f'<div class="func-desc" style="text-align:center;margin-top:6px;">'
+                f'{mod["desc"]}</div>',
                 unsafe_allow_html=True,
             )
 
@@ -1646,18 +1681,21 @@ def main() -> None:
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
         # 导航菜单
+        _nav_pages = [
+            "系统首页",
+            "数据导入",
+            "时空特征可视化",
+            "驱动因子分析",
+            "风险预警评估",
+        ]
         page = st.radio(
             "导航",
-            options=[
-                "系统首页",
-                "数据导入",
-                "时空特征可视化",
-                "驱动因子分析",
-                "风险预警评估",
-            ],
-            index=0,
+            options=_nav_pages,
+            index=_nav_pages.index(st.session_state["current_page"]),
             label_visibility="collapsed",
         )
+        # 同步侧边栏选择到会话状态，供首页核心功能卡片跳转使用
+        st.session_state["current_page"] = page
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
