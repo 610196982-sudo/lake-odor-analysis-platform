@@ -86,6 +86,7 @@ from model import (
     train_risk_model,
     run_anova_analysis,
     evaluate_model_cv,
+    diagnose_indicators,
     RISK_LEVELS,
 )
 
@@ -312,18 +313,18 @@ def apply_custom_css() -> None:
             margin-bottom: 6px;
         }
         .sidebar-brand-title {
-            font-size: 1.05rem;
-            font-weight: 600;
+            font-size: 2.0rem;
+            font-weight: 700;
             color: #16425b;
             margin: 0;
             letter-spacing: 1.5px;
         }
         .sidebar-brand-sub {
-            font-size: 0.68rem;
+            font-size: 0.95rem;
             color: #7ea0a8;
             margin: 4px 0 0 0;
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
         .sidebar-divider {
             height: 1px;
@@ -1544,6 +1545,40 @@ def render_risk_warning_page() -> None:
         st.markdown("**📝 风险详细描述：**")
         st.info(risk_result["风险描述"])
 
+        # 风险驱动指标诊断：逐项说明各指标偏高/偏低，直观展示风险由哪个数据值引起
+        diagnosis = diagnose_indicators(
+            water_temp=water_temp, ph=ph, do_val=do_val, turbidity=turbidity,
+            tn=tn, tp=tp, nh3n=nh3n, codmn=codmn, chl_a=chl_a,
+        )
+        st.markdown("---")
+        st.markdown('<div class="module-title">🔍 风险驱动指标诊断</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<p style="color:#666;font-size:0.85rem;margin-bottom:10px;">'
+            '以下逐项说明各水质指标当前水平：<span style="color:#e74c3c;font-weight:bold;">红色为偏高</span>、'
+            '<span style="color:#2980b9;font-weight:bold;">蓝色为偏低</span>、'
+            '<span style="color:#27ae60;font-weight:bold;">绿色为正常</span>；'
+            '带 ⚠️ 标记的指标是本次风险的主要来源。</p>',
+            unsafe_allow_html=True,
+        )
+
+        _status_color_map = {"偏高": "#e74c3c", "偏低": "#2980b9", "正常": "#27ae60"}
+        diag_cols = st.columns(3)
+        for idx, item in enumerate(diagnosis):
+            color = _status_color_map.get(item["状态"], "#333333")
+            driver_mark = " ⚠️" if item["风险驱动"] else ""
+            with diag_cols[idx % 3]:
+                st.markdown(
+                    f'<div style="border-left:4px solid {color};padding:8px 10px;'
+                    f'margin:6px 0;background-color:#fafafa;border-radius:4px;">'
+                    f'<b>{item["指标"]}</b> '
+                    f'<span style="color:{color};font-weight:bold;">{item["状态"]}</span>'
+                    f'{driver_mark}<br>'
+                    f'<span style="font-size:0.85rem;color:#333;">'
+                    f'数值：{item["数值"]} {item["单位"]}（{item["等级说明"]}）</span><br>'
+                    f'<span style="font-size:0.8rem;color:#666;">{item["说明"]}</span></div>',
+                    unsafe_allow_html=True,
+                )
+
         # 输入参数回顾
         with st.expander("📋 查看本次预测的输入参数"):
             input_params = risk_result["输入参数"]
@@ -1556,12 +1591,26 @@ def render_risk_warning_page() -> None:
 
         # 嗅味风险等级说明
         with st.expander("📖 嗅味风险等级划分标准"):
+            st.markdown(
+                '<p style="color:#666;font-size:0.85rem;">'
+                '每个风险等级均对应明确的嗅味物质浓度区间与典型水质指标特征，'
+                '便于对照判断风险由哪项数据偏高/偏低引起。</p>',
+                unsafe_allow_html=True,
+            )
             for level_name, level_info in RISK_LEVELS.items():
                 level_color = risk_color_map.get(level_name, "#333")
+                features_html = "".join(
+                    f'<li>{f}</li>' for f in level_info.get("指标特征", [])
+                )
                 st.markdown(
                     f'<div style="border-left:5px solid {level_color};'
                     f'padding:10px;margin:8px 0;background-color:#fafafa;">'
                     f'<b>{level_name}</b>：{level_info["描述"]}<br>'
+                    f'<span style="font-weight:bold;color:{level_color};">'
+                    f'浓度区间：{level_info.get("浓度区间", "—")}</span><br>'
+                    f'<span style="color:#333;">典型指标特征：</span>'
+                    f'<ul style="margin:4px 0 0 18px;font-size:0.85rem;color:#444;">'
+                    f'{features_html}</ul>'
                     f'<i>建议：{level_info["建议"]}</i></div>',
                     unsafe_allow_html=True,
                 )
