@@ -136,10 +136,10 @@ def apply_custom_css() -> None:
             font-family: 'Microsoft YaHei', 'PingFang SC', 'SimHei', 'Noto Sans SC', sans-serif;
         }
 
-        /* 全局字号整体放大 1.5 倍：所有 rem 单位（含 Streamlit 默认组件与自定义样式）
-           统一随根字号缩放，默认 16px → 24px。 */
+        /* 全局字号整体放大 1.2 倍：所有 rem 单位（含 Streamlit 默认组件与自定义样式）
+           统一随根字号缩放，默认 16px → 19.2px，保持紧凑。 */
         html {
-            font-size: 150% !important;
+            font-size: 120% !important;
         }
 
         /* 主标题 */
@@ -277,11 +277,6 @@ def apply_custom_css() -> None:
             margin-top: 4px;
             letter-spacing: 1px;
         }
-        .stat-card .stat-icon {
-            font-size: 1.4rem;
-            opacity: 0.35;
-            margin-bottom: 2px;
-        }
         .stat-card .stat-empty {
             color: #9db8b8;
             font-weight: 600;
@@ -292,12 +287,12 @@ def apply_custom_css() -> None:
             background: #ffffff;
             border: 1px solid #d7e8e6;
             border-radius: 12px;
-            padding: 16px 12px;
+            padding: 14px 12px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 130px;
+            min-height: 90px;
             box-shadow: 0 2px 6px rgba(14, 116, 144, 0.06);
             transition: all 0.25s ease;
         }
@@ -320,12 +315,6 @@ def apply_custom_css() -> None:
             box-shadow: none !important;
             border-color: transparent !important;
             color: #0e7490 !important;
-        }
-        [class*="st-key-func_card_"] .func-desc {
-            font-size: 0.78rem;
-            color: #64748b;
-            line-height: 1.6;
-            margin-top: 6px;
         }
 
         /* 分析流程：水平步骤条 */
@@ -421,7 +410,7 @@ def apply_custom_css() -> None:
             margin-bottom: 6px;
         }
         .sidebar-brand-title {
-            font-size: 1.5rem;
+            font-size: 2.0rem;
             font-weight: 700;
             color: #16425b;
             margin: 0;
@@ -616,19 +605,15 @@ def render_home_page() -> None:
             f"  |  研究水体：{'、'.join(lake_list)}"
         )
     else:
-        # 无数据时展示占位（淡色图标 + 占位符）
+        # 无数据时展示占位
         s1, s2, s3, s4 = st.columns(4)
-        empty_items = [
-            ("监测记录", "📄"),
-            ("采样点位", "📍"),
-            ("监测指标", "🧪"),
-            ("嗅味物质", "👃"),
-        ]
-        for col, (label, icon) in zip([s1, s2, s3, s4], empty_items):
+        for col, label in zip(
+            [s1, s2, s3, s4],
+            ["监测记录", "采样点位", "监测指标", "嗅味物质"]
+        ):
             with col:
                 st.markdown(
                     f'<div class="stat-card">'
-                    f'<div class="stat-icon">{icon}</div>'
                     f'<div class="stat-value stat-empty">--</div>'
                     f'<div class="stat-label">{label}</div></div>',
                     unsafe_allow_html=True,
@@ -650,26 +635,10 @@ def render_home_page() -> None:
     )
 
     modules = [
-        {
-            "name": "数据导入",
-            "icon": ":material/upload:",
-            "desc": "多格式识别 · 列名映射 · 数据验证",
-        },
-        {
-            "name": "时空特征可视化",
-            "icon": ":material/map:",
-            "desc": "时间序列 · 箱线对比 · 热力图 · 散点拟合",
-        },
-        {
-            "name": "驱动因子分析",
-            "icon": ":material/analytics:",
-            "desc": "相关分析 · 回归 · 随机森林排序",
-        },
-        {
-            "name": "风险预警评估",
-            "icon": ":material/warning:",
-            "desc": "浓度预测 · 四级定级 · 处理建议",
-        },
+        {"name": "数据导入", "icon": ":material/upload:"},
+        {"name": "时空特征可视化", "icon": ":material/map:"},
+        {"name": "驱动因子分析", "icon": ":material/analytics:"},
+        {"name": "风险预警评估", "icon": ":material/warning:"},
     ]
 
     cols = st.columns(4)
@@ -684,10 +653,6 @@ def render_home_page() -> None:
                 ):
                     st.session_state["current_page"] = mod["name"]
                     st.rerun()
-                st.markdown(
-                    f'<div class="func-desc">{mod["desc"]}</div>',
-                    unsafe_allow_html=True,
-                )
 
     # --- 分析工作流（水平步骤条） ---
     st.markdown('<div class="module-title">分析流程</div>', unsafe_allow_html=True)
