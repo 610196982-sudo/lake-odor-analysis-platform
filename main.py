@@ -136,10 +136,10 @@ def apply_custom_css() -> None:
             font-family: 'Microsoft YaHei', 'PingFang SC', 'SimHei', 'Noto Sans SC', sans-serif;
         }
 
-        /* 全局字号放大一倍：所有 rem 单位（含 Streamlit 默认组件与自定义样式）
-           统一随根字号翻倍，默认 16px → 32px。 */
+        /* 全局字号整体放大 1.5 倍：所有 rem 单位（含 Streamlit 默认组件与自定义样式）
+           统一随根字号缩放，默认 16px → 24px。 */
         html {
-            font-size: 200% !important;
+            font-size: 150% !important;
         }
 
         /* 主标题 */
@@ -421,7 +421,7 @@ def apply_custom_css() -> None:
             margin-bottom: 6px;
         }
         .sidebar-brand-title {
-            font-size: 1.15rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #16425b;
             margin: 0;
