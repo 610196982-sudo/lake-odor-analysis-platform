@@ -136,6 +136,12 @@ def apply_custom_css() -> None:
             font-family: 'Microsoft YaHei', 'PingFang SC', 'SimHei', 'Noto Sans SC', sans-serif;
         }
 
+        /* 全局字号放大一倍：所有 rem 单位（含 Streamlit 默认组件与自定义样式）
+           统一随根字号翻倍，默认 16px → 32px。 */
+        html {
+            font-size: 200% !important;
+        }
+
         /* 主标题 */
         .main-title {
             font-size: 2.0rem;
