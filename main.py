@@ -162,6 +162,23 @@ def apply_custom_css() -> None:
             letter-spacing: 1px;
         }
 
+        /* 首页顶部 Banner 容器（浅蓝绿渐变聚焦） */
+        .hero-banner {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #d7e8e6;
+            border-radius: 16px;
+            padding: 22px 24px 16px 24px;
+            margin: 6px 0 22px 0;
+            text-align: center;
+        }
+        .hero-banner .main-title {
+            padding: 0 0 6px 0;
+            margin-bottom: 2px;
+        }
+        .hero-banner .sub-title {
+            margin-bottom: 0;
+        }
+
         /* 模块标题 */
         .module-title {
             font-size: 1.1rem;
@@ -182,6 +199,25 @@ def apply_custom_css() -> None:
             font-size: 0.92rem;
             line-height: 1.8;
             color: #475569;
+        }
+
+        /* 信息提示条（浅青背景 Callout） */
+        .info-callout {
+            background: #e8f4fb;
+            border: 1px solid #cde6f5;
+            border-left: 4px solid #0e7490;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 14px 0 4px 0;
+            color: #16425b;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            line-height: 1.6;
+        }
+        .info-callout-icon {
+            font-size: 1.1rem;
+            line-height: 1.4;
         }
 
         /* 成功提示框 */
@@ -241,61 +277,108 @@ def apply_custom_css() -> None:
             margin-top: 4px;
             letter-spacing: 1px;
         }
+        .stat-card .stat-icon {
+            font-size: 1.4rem;
+            opacity: 0.35;
+            margin-bottom: 2px;
+        }
+        .stat-card .stat-empty {
+            color: #9db8b8;
+            font-weight: 600;
+        }
 
-        /* 功能模块卡片 */
-        .func-card {
+        /* 核心功能卡片：整卡容器（图标 + 标题 + 说明合成一张卡） */
+        [class*="st-key-func_card_"] {
             background: #ffffff;
             border: 1px solid #d7e8e6;
-            border-radius: 10px;
-            padding: 24px 14px;
+            border-radius: 12px;
+            padding: 16px 12px;
             text-align: center;
-            transition: all 0.25s ease;
-            cursor: default;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 120px;
-            height: 100%;
+            min-height: 130px;
+            box-shadow: 0 2px 6px rgba(14, 116, 144, 0.06);
+            transition: all 0.25s ease;
         }
-        .func-card:hover {
+        [class*="st-key-func_card_"]:hover {
             border-color: #0e7490;
-            box-shadow: 0 4px 14px rgba(14, 116, 144, 0.14);
-            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(14, 116, 144, 0.18);
+            transform: translateY(-3px);
         }
-        .func-card .func-name {
-            font-size: 0.95rem;
+        [class*="st-key-func_card_"] .stButton > button[kind="secondary"] {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            min-height: auto !important;
+            padding: 2px 0 !important;
             font-weight: 600;
             color: #16425b;
-            margin-bottom: 6px;
         }
-        .func-card .func-desc {
+        [class*="st-key-func_card_"] .stButton > button[kind="secondary"]:hover {
+            transform: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+            color: #0e7490 !important;
+        }
+        [class*="st-key-func_card_"] .func-desc {
             font-size: 0.78rem;
             color: #64748b;
             line-height: 1.6;
+            margin-top: 6px;
         }
 
-        /* 工作流步骤 */
+        /* 分析流程：水平步骤条 */
+        .workflow {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            background: #f7fbfa;
+            border: 1px solid #e3e8e6;
+            border-radius: 12px;
+            padding: 26px 20px 22px 20px;
+            margin: 8px 0 0 0;
+        }
         .workflow-step {
-            display: inline-block;
+            position: relative;
+            flex: 1 1 0;
             text-align: center;
-            padding: 12px 20px;
         }
         .workflow-step .step-num {
             display: inline-block;
-            width: 36px;
-            height: 36px;
-            line-height: 36px;
+            width: 48px;
+            height: 48px;
+            line-height: 48px;
             border-radius: 50%;
             background: #0e7490;
             color: #fff;
             font-weight: 700;
-            font-size: 1.0rem;
-            margin-bottom: 6px;
+            font-size: 1.15rem;
+            position: relative;
+            z-index: 1;
         }
         .workflow-step .step-text {
-            font-size: 0.8rem;
-            color: #475569;
-            font-weight: 500;
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #16425b;
+            font-weight: 600;
+        }
+        .workflow-step .step-sub {
+            font-size: 0.72rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+        .workflow-step::after {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: calc(50% + 28px);
+            width: calc(100% - 56px);
+            height: 3px;
+            background: linear-gradient(90deg, #0e7490, #b7d8e0);
+        }
+        .workflow-step:last-child::after {
+            display: none;
         }
 
         /* 页脚 */
@@ -314,6 +397,21 @@ def apply_custom_css() -> None:
             background: linear-gradient(180deg, #e9f4f3 0%, #ffffff 100%);
             border-right: 1px solid #d7e8e6;
         }
+        /* 让侧边栏内容纵向撑满，便于把底部版权信息固定在底部 */
+        [data-testid="stSidebarContent"] {
+            display: flex;
+            flex-direction: column;
+        }
+        [data-testid="stSidebarUserContent"] {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        [data-testid="stSidebarUserContent"] > div {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
         .sidebar-brand {
             text-align: center;
             padding: 20px 12px 14px 12px;
@@ -323,11 +421,11 @@ def apply_custom_css() -> None:
             margin-bottom: 6px;
         }
         .sidebar-brand-title {
-            font-size: 2.0rem;
+            font-size: 1.15rem;
             font-weight: 700;
             color: #16425b;
             margin: 0;
-            letter-spacing: 1.5px;
+            letter-spacing: 0.5px;
         }
         .sidebar-brand-sub {
             font-size: 0.95rem;
@@ -363,15 +461,19 @@ def apply_custom_css() -> None:
             box-sizing: border-box !important;
             margin: 0 !important;
         }
+        /* 隐藏默认 radio 圆点（圆点是 label 的第一个子 div），只保留文字导航项 */
+        section[data-testid="stSidebar"] [data-testid="stRadio"] label > div:first-child {
+            display: none !important;
+        }
         section[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
             background-color: #e6f3f1 !important;
             color: #0e7490 !important;
         }
-        section[data-testid="stSidebar"] [data-testid="stRadio"] input[type="radio"]:checked + *,
         section[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
             background-color: #d5efee !important;
             color: #0e7490 !important;
             font-weight: 600 !important;
+            box-shadow: inset 4px 0 0 0 #0e7490 !important;
         }
 
         .sidebar-footer {
@@ -379,6 +481,8 @@ def apply_custom_css() -> None:
             color: #94a3b8;
             text-align: center;
             line-height: 1.6;
+            margin-top: auto;
+            padding-top: 18px;
         }
         .sidebar-status {
             background: #e8f5f3;
@@ -448,14 +552,13 @@ def render_home_page() -> None:
     """
     渲染系统首页，科技感数据驾驶舱风格。
     """
-    # --- Hero 区域 ---
+    # --- Hero 区域（顶部 Banner） ---
     st.markdown(
-        '<div class="main-title">湖库水体嗅味污染多维分析平台</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
+        '<div class="hero-banner">'
+        '<div class="main-title">湖库水体嗅味污染多维分析平台</div>'
         '<p class="sub-title">'
-        '基于多源环境理化指标 · 驱动因子识别 · 风险智能预警</p>',
+        '基于多源环境理化指标 · 驱动因子识别 · 风险智能预警</p>'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -513,20 +616,30 @@ def render_home_page() -> None:
             f"  |  研究水体：{'、'.join(lake_list)}"
         )
     else:
-        # 无数据时展示占位
+        # 无数据时展示占位（淡色图标 + 占位符）
         s1, s2, s3, s4 = st.columns(4)
-        for col, label in zip(
-            [s1, s2, s3, s4],
-            ["监测记录", "采样点位", "监测指标", "嗅味物质"]
-        ):
+        empty_items = [
+            ("监测记录", "📄"),
+            ("采样点位", "📍"),
+            ("监测指标", "🧪"),
+            ("嗅味物质", "👃"),
+        ]
+        for col, (label, icon) in zip([s1, s2, s3, s4], empty_items):
             with col:
                 st.markdown(
                     f'<div class="stat-card">'
-                    f'<div class="stat-value" style="font-size:1.2rem;opacity:0.5;">—</div>'
+                    f'<div class="stat-icon">{icon}</div>'
+                    f'<div class="stat-value stat-empty">--</div>'
                     f'<div class="stat-label">{label}</div></div>',
                     unsafe_allow_html=True,
                 )
-        st.caption("尚未导入数据。请通过左侧导航进入「数据导入」上传您的监测数据。")
+        st.markdown(
+            '<div class="info-callout">'
+            '<span class="info-callout-icon">ℹ️</span>'
+            '<span>尚未导入数据。请通过左侧导航进入「数据导入」上传您的监测数据。</span>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
 
     # --- 功能模块（可点击跳转） ---
     st.markdown('<div class="module-title">核心功能</div>', unsafe_allow_html=True)
@@ -539,61 +652,62 @@ def render_home_page() -> None:
     modules = [
         {
             "name": "数据导入",
-            "icon": "📥",
+            "icon": ":material/upload:",
             "desc": "多格式识别 · 列名映射 · 数据验证",
         },
         {
             "name": "时空特征可视化",
-            "icon": "🗺️",
+            "icon": ":material/map:",
             "desc": "时间序列 · 箱线对比 · 热力图 · 散点拟合",
         },
         {
             "name": "驱动因子分析",
-            "icon": "🧬",
+            "icon": ":material/analytics:",
             "desc": "相关分析 · 回归 · 随机森林排序",
         },
         {
             "name": "风险预警评估",
-            "icon": "⚠️",
+            "icon": ":material/warning:",
             "desc": "浓度预测 · 四级定级 · 处理建议",
         },
     ]
 
     cols = st.columns(4)
-    for col, mod in zip(cols, modules):
+    for idx, (col, mod) in enumerate(zip(cols, modules)):
         with col:
-            if st.button(
-                f'{mod["icon"]} {mod["name"]}',
-                key=f"home_nav_{mod['name']}",
-                use_container_width=True,
-            ):
-                st.session_state["current_page"] = mod["name"]
-                st.rerun()
-            st.markdown(
-                f'<div class="func-desc" style="text-align:center;margin-top:6px;">'
-                f'{mod["desc"]}</div>',
-                unsafe_allow_html=True,
-            )
+            with st.container(key=f"func_card_{idx}"):
+                if st.button(
+                    f"**{mod['name']}**",
+                    icon=mod["icon"],
+                    key=f"home_nav_{mod['name']}",
+                    use_container_width=True,
+                ):
+                    st.session_state["current_page"] = mod["name"]
+                    st.rerun()
+                st.markdown(
+                    f'<div class="func-desc">{mod["desc"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
-    # --- 分析工作流 ---
+    # --- 分析工作流（水平步骤条） ---
     st.markdown('<div class="module-title">分析流程</div>', unsafe_allow_html=True)
 
-    steps = ["数据导入", "数据验证", "特征可视化", "因子建模", "风险预警"]
-    workflow_html = (
-        '<div style="display:flex;justify-content:center;align-items:center;'
-        'flex-wrap:wrap;gap:10px;padding:20px 0;">'
-    )
-    for i, step in enumerate(steps):
+    steps = [
+        ("数据导入", "上传与解析"),
+        ("数据验证", "清洗与校验"),
+        ("特征可视化", "时空分布"),
+        ("因子建模", "相关性 · 重要性"),
+        ("风险预警", "分级 · 建议"),
+    ]
+    workflow_html = '<div class="workflow">'
+    for i, (step, sub) in enumerate(steps):
         workflow_html += (
             f'<div class="workflow-step">'
             f'<div class="step-num">{i + 1}</div>'
             f'<div class="step-text">{step}</div>'
+            f'<div class="step-sub">{sub}</div>'
             f'</div>'
         )
-        if i < len(steps) - 1:
-            workflow_html += (
-                '<div style="font-size:1.2rem;color:#c0c4cc;padding:0 4px;">→</div>'
-            )
     workflow_html += '</div>'
 
     st.markdown(workflow_html, unsafe_allow_html=True)
@@ -1705,14 +1819,6 @@ def main() -> None:
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
-        # 侧边栏底部信息
-        st.markdown(
-            '<p class="sidebar-footer">'
-            '© 2026 湖库水体嗅味污染<br>多维分析平台<br>'
-            '基于实测数据的溯源解析</p>',
-            unsafe_allow_html=True,
-        )
-
         # 显示当前数据状态
         if st.session_state["main_dataset"] is not None:
             st.markdown(
@@ -1721,6 +1827,14 @@ def main() -> None:
                 f'{st.session_state["data_source"]}</p></div>',
                 unsafe_allow_html=True,
             )
+
+        # 侧边栏底部信息（固定在底部）
+        st.markdown(
+            '<p class="sidebar-footer">'
+            '© 2026 湖库水体嗅味污染<br>多维分析平台<br>'
+            '基于实测数据的溯源解析</p>',
+            unsafe_allow_html=True,
+        )
 
     # --- 根据导航选择渲染对应页面 ---
     if page == "系统首页":
