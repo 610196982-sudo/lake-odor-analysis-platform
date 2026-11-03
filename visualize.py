@@ -1130,8 +1130,8 @@ _ODOR_LEVEL_COLORS: dict = {
 # 因为 Mapbox GL（plotly scatter_mapbox）读取瓦片进 WebGL 要求 CORS，而高德
 # 瓦片服务器不返回 Access-Control-Allow-Origin，导致底图空白。
 _AMAP_TILE_URL: str = (
-    "https://wprd01.is.autonavi.com/appmaptile"
-    "?lang=zh_cn&size=1&scl=1&style=7&x={x}&y={y}&z={z}"
+    "https://webrd0{s}.is.autonavi.com/appmaptile"
+    "?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
 )
 
 
@@ -1342,6 +1342,8 @@ def _plot_gis_map_folium(
         tiles=_AMAP_TILE_URL,
         attr="© 高德地图",
         name="高德底图",
+        subdomains="1234",
+        tms=False,
     ).add_to(m)
 
     # 气泡半径按嗅味浓度线性缩放
