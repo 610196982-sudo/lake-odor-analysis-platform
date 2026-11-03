@@ -1123,15 +1123,30 @@ _ODOR_LEVEL_COLORS: dict = {
     "未知":     "#9aa5b1",
 }
 
-# 高德瓦片源（国内直连、免费、无需 token）。
-# 注意：高德瓦片为 GCJ-02（火星坐标），点位需先用 _wgs84_to_gcj02 由 WGS-84
-# 偏移对齐，否则点位会与底图错位数百米。
-# 底图改用 folium/Leaflet 渲染（Leaflet 用 <img> 加载瓦片，不需要 CORS 头），
-# 因为 Mapbox GL（plotly scatter_mapbox）读取瓦片进 WebGL 要求 CORS，而高德
-# 瓦片服务器不返回 Access-Control-Allow-Origin，导致底图空白。
+# 天地图 key（可选，免费注册 https://www.tianditu.gov.cn/ 后获取 tk）。
+# 留空则自动隐藏「天地图」底图选项，不影响其它底图。
+TIANDITU_KEY: str = ""
+
+# --- 多底图源（folium/Leaflet 渲染，Leaflet 用 <img> 加载瓦片无需 CORS） ---
+# 注意：高德瓦片为 GCJ-02（火星坐标），点位需先用 _wgs84_to_gcj02 由 WGS-84 偏移对齐；
+# CartoDB / OpenStreetMap / 天地图（CGCS2000）为 WGS-84 系，点位在这些底图上会有
+# 一两百米级偏移（区域尺度可忽略）。不再用 plotly scatter_mapbox，因为 Mapbox GL
+# 读取瓦片进 WebGL 要求 CORS，而高德瓦片服务器不返回 Access-Control-Allow-Origin。
 _AMAP_TILE_URL: str = (
     "https://webrd0{s}.is.autonavi.com/appmaptile"
     "?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
+)
+_AMAP_SAT_TILE_URL: str = (
+    "https://webst0{s}.is.autonavi.com/appmaptile"
+    "?style=6&x={x}&y={y}&z={z}"
+)
+_CARTO_LIGHT_URL: str = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+_OSM_TILE_URL: str = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+# 天地图 WMTS（需 TIANDITU_KEY，{tk} 用 replace 注入，避免 .format 干扰 {x}{y}{z}）
+_TIANDITU_TILE_URL: str = (
+    "https://t0.tianditu.gov.cn/vec_w/wmts"
+    "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default"
+    "&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={tk}"
 )
 
 
@@ -1320,10 +1335,10 @@ def _plot_gis_map_folium(
     center: Tuple[float, float],
 ):
     """
-    用 folium/Leaflet 渲染高德底图 + 采样点位气泡。
+    用 folium/Leaflet 渲染多底图 + 采样点位气泡。
 
-    高德瓦片为 GCJ-02，点位与中心由 WGS-84 偏移对齐后叠加。
-    Leaflet 以 <img> 加载瓦片，不需要 CORS 头，故国内可正常显示底图。
+    - 多个底图源（高德标准/高德卫星/CartoDB/OSM/天地图）经 LayerControl 手动切换；
+    - 气泡大小对应嗅味浓度，颜色分级（10/50 ng/L），悬浮弹窗展示理化指标均值。
     """
     import folium
 
@@ -1338,13 +1353,47 @@ def _plot_gis_map_folium(
         tiles=None,
         control_scale=True,
     )
+
+    # --- 多底图源（默认显示高德标准，其余可经 LayerControl 切换） ---
     folium.TileLayer(
         tiles=_AMAP_TILE_URL,
         attr="© 高德地图",
-        name="高德底图",
+        name="高德标准",
         subdomains="1234",
         tms=False,
+        show=True,
     ).add_to(m)
+    folium.TileLayer(
+        tiles=_AMAP_SAT_TILE_URL,
+        attr="© 高德地图",
+        name="高德卫星",
+        subdomains="1234",
+        tms=False,
+        show=False,
+    ).add_to(m)
+    folium.TileLayer(
+        tiles=_CARTO_LIGHT_URL,
+        attr="© OpenStreetMap © CARTO",
+        name="CartoDB 浅色",
+        subdomains="abcd",
+        tms=False,
+        show=False,
+    ).add_to(m)
+    folium.TileLayer(
+        tiles=_OSM_TILE_URL,
+        attr="© OpenStreetMap",
+        name="OpenStreetMap",
+        tms=False,
+        show=False,
+    ).add_to(m)
+    if TIANDITU_KEY:
+        folium.TileLayer(
+            tiles=_TIANDITU_TILE_URL.replace("{tk}", TIANDITU_KEY),
+            attr="© 天地图",
+            name="天地图",
+            tms=False,
+            show=False,
+        ).add_to(m)
 
     # 气泡半径按嗅味浓度线性缩放
     sizes = pd.to_numeric(geo[odor_col], errors="coerce").fillna(0.0)
@@ -1362,7 +1411,6 @@ def _plot_gis_map_folium(
         color = _ODOR_LEVEL_COLORS.get(level, _ODOR_LEVEL_COLORS["未知"])
         radius = 5.0 + 16.0 * (odor_val / max_s)
 
-        # 悬浮弹窗：点位 + 湖泊 + 嗅味值 + 风险等级 + 理化指标均值
         popup_rows = [f"<b>{r['采样点位']}</b>"]
         if "湖泊名称" in geo.columns:
             popup_rows.append(f"湖泊：{r['湖泊名称']}")
@@ -1390,6 +1438,7 @@ def _plot_gis_map_folium(
             fill_opacity=0.8,
         ).add_to(m)
 
+    folium.LayerControl(collapsed=False).add_to(m)
     _add_folium_legend(m, title)
     return m
 
