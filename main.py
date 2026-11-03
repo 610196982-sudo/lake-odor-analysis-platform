@@ -523,7 +523,7 @@ def apply_custom_css() -> None:
         input[type="radio"]:checked {
             accent-color: #0e7490;
         }
-        .stSlider > div > div > div > div {
+        [data-testid="stSlider"] [role="slider"] {
             background-color: #0e7490 !important;
         }
         .stProgress > div > div > div {
@@ -1331,6 +1331,7 @@ def render_analysis_page() -> None:
             default=driver_opts[:min(6, len(driver_opts))],
         )
         n_trees = st.slider("决策树数量", 50, 500, 100, 50)
+        st.caption(f"当前决策树数量：**{n_trees}** 棵")
 
         if st.button("🌲 分析特征重要性", type="primary"):
             if len(predictor_cols) < 2:
