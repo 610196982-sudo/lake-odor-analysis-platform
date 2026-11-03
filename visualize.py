@@ -1123,32 +1123,16 @@ _ODOR_LEVEL_COLORS: dict = {
     "未知":     "#9aa5b1",
 }
 
-# 高德彩色简洁底图（Mapbox GL 样式）：国内直连、免费、无需 token。
-# 原先用 CartoDB Voyager（basemaps.cartocdn.com），国内网络常被拦截导致组员端底图空白，
-# 故改为高德瓦片源。注意：高德瓦片为 GCJ-02（火星坐标），点位需先用
-# _wgs84_to_gcj02 由 WGS-84 偏移对齐，否则点位会与底图错位数百米。
-_MAPBOX_AMAP_STYLE: dict = {
-    "version": 8,
-    "sources": {
-        "amap": {
-            "type": "raster",
-            "tiles": [
-                "https://wprd01.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scl=1&style=7&x={x}&y={y}&z={z}",
-            ],
-            "tileSize": 256,
-            "attribution": "© 高德地图",
-        }
-    },
-    "layers": [
-        {
-            "id": "amap-layer",
-            "type": "raster",
-            "source": "amap",
-            "minzoom": 0,
-            "maxzoom": 22,
-        }
-    ],
-}
+# 高德瓦片源（国内直连、免费、无需 token）。
+# 注意：高德瓦片为 GCJ-02（火星坐标），点位需先用 _wgs84_to_gcj02 由 WGS-84
+# 偏移对齐，否则点位会与底图错位数百米。
+# 底图改用 folium/Leaflet 渲染（Leaflet 用 <img> 加载瓦片，不需要 CORS 头），
+# 因为 Mapbox GL（plotly scatter_mapbox）读取瓦片进 WebGL 要求 CORS，而高德
+# 瓦片服务器不返回 Access-Control-Allow-Origin，导致底图空白。
+_AMAP_TILE_URL: str = (
+    "https://wprd01.is.autonavi.com/appmaptile"
+    "?lang=zh_cn&size=1&scl=1&style=7&x={x}&y={y}&z={z}"
+)
 
 
 def _wgs84_to_gcj02(lon: float, lat: float) -> Tuple[float, float]:
@@ -1328,6 +1312,110 @@ def _plot_gis_map_matplotlib(
     return fig
 
 
+def _plot_gis_map_folium(
+    geo: pd.DataFrame,
+    odor_col: str,
+    title: str,
+    zoom: int,
+    center: Tuple[float, float],
+):
+    """
+    用 folium/Leaflet 渲染高德底图 + 采样点位气泡。
+
+    高德瓦片为 GCJ-02，点位与中心由 WGS-84 偏移对齐后叠加。
+    Leaflet 以 <img> 加载瓦片，不需要 CORS 头，故国内可正常显示底图。
+    """
+    import folium
+
+    def _gcj(lon: float, lat: float) -> Tuple[float, float]:
+        return _wgs84_to_gcj02(float(lon), float(lat))
+
+    center_gcj_lon, center_gcj_lat = _gcj(center[1], center[0])
+
+    m = folium.Map(
+        location=[center_gcj_lat, center_gcj_lon],
+        zoom_start=zoom,
+        tiles=None,
+        control_scale=True,
+    )
+    folium.TileLayer(
+        tiles=_AMAP_TILE_URL,
+        attr="© 高德地图",
+        name="高德底图",
+    ).add_to(m)
+
+    # 气泡半径按嗅味浓度线性缩放
+    sizes = pd.to_numeric(geo[odor_col], errors="coerce").fillna(0.0)
+    max_s = float(sizes.max()) if sizes.max() > 0 else 1.0
+
+    info_cols = [
+        "水温", "DO", "pH", "浊度", "TN", "TP", "NH3-N", "CODMn",
+        "叶绿素a", "藻密度", "电导率",
+    ]
+
+    for _, r in geo.iterrows():
+        glon, glat = _gcj(float(r["经度"]), float(r["纬度"]))
+        odor_val = float(r.get(odor_col, 0.0) or 0.0)
+        level = r.get("风险等级", "未知")
+        color = _ODOR_LEVEL_COLORS.get(level, _ODOR_LEVEL_COLORS["未知"])
+        radius = 5.0 + 16.0 * (odor_val / max_s)
+
+        # 悬浮弹窗：点位 + 湖泊 + 嗅味值 + 风险等级 + 理化指标均值
+        popup_rows = [f"<b>{r['采样点位']}</b>"]
+        if "湖泊名称" in geo.columns:
+            popup_rows.append(f"湖泊：{r['湖泊名称']}")
+        popup_rows.append(f"{odor_col}：{odor_val:.3f} ng/L")
+        popup_rows.append(f"风险等级：{level}")
+        for c in info_cols:
+            v = r.get(c)
+            if v is None or (isinstance(v, float) and np.isnan(v)):
+                continue
+            try:
+                popup_rows.append(f"{c}：{float(v):.3f}")
+            except (TypeError, ValueError):
+                continue
+        popup_html = "<br>".join(popup_rows)
+
+        folium.CircleMarker(
+            location=[glat, glon],
+            radius=radius,
+            popup=folium.Popup(popup_html, max_width=240),
+            tooltip=str(r["采样点位"]),
+            color="#ffffff",
+            weight=1.2,
+            fill=True,
+            fill_color=color,
+            fill_opacity=0.8,
+        ).add_to(m)
+
+    _add_folium_legend(m, title)
+    return m
+
+
+def _add_folium_legend(m, title: str) -> None:
+    """
+    向 folium 地图加入标题与风险等级图例（左下角）。
+    """
+    import folium
+
+    items = "".join(
+        '<div style="display:flex;align-items:center;margin:2px 0;">'
+        f'<span style="display:inline-block;width:12px;height:12px;border-radius:50%;'
+        f'background:{color};margin-right:6px;border:1px solid #fff;"></span>'
+        f'<span>{label}</span></div>'
+        for label, color in _ODOR_LEVEL_COLORS.items()
+    )
+    legend_html = (
+        '<div style="position:fixed;bottom:24px;left:12px;z-index:9999;'
+        'background:#fff;padding:10px 12px;border-radius:6px;'
+        'box-shadow:0 1px 5px rgba(0,0,0,.25);font:13px/1.5 sans-serif;color:#333;'
+        'max-width:260px;">'
+        f'<div style="font-weight:600;margin-bottom:4px;">{title}</div>'
+        f'{items}</div>'
+    )
+    m.get_root().html.add_child(folium.Element(legend_html))
+
+
 def plot_gis_map(
     df: pd.DataFrame,
     odor_col: str = "2-MIB",
@@ -1336,14 +1424,16 @@ def plot_gis_map(
     center: Tuple[float, float] = (31.0, 120.0),
 ):
     """
-    绘制采样断面的空间 GIS 地图。
+    绘制采样断面的空间 GIS 地图（folium/Leaflet + 高德底图）。
 
     - 气泡大小对应嗅味浓度（odor_col）。
-    - 颜色分级：正常（<10，绿）、轻度（10~50，黄）、严重（>50，红）。
+    - 颜色分级：正常（<10，绿）、轻度（10~50，蓝）、严重（>50，红）。
     - 悬浮弹窗展示该点位的理化指标均值。
 
-    优先使用 plotly.express.scatter_mapbox（免费 CartoDB Voyager 彩色简洁底图，无需 token）；
-    若未安装 plotly，则回退为 matplotlib 散点图。
+    底图使用高德瓦片，由 folium/Leaflet 渲染。Leaflet 以 <img> 加载瓦片，
+    不需要 CORS 头，因此国内可直接显示底图（plotly 的 Mapbox GL 因高德瓦片
+    不返回 Access-Control-Allow-Origin 而底图空白，故不再使用）。
+    若未安装 folium，则回退为 matplotlib 经纬度散点图（无底图）。
 
     参数
     ----
@@ -1354,14 +1444,14 @@ def plot_gis_map(
     title : str
         图表标题。
     zoom : int
-        地图缩放级别（仅 plotly 有效）。
+        地图缩放级别。
     center : Tuple[float, float]
-        地图中心（纬度, 经度）（仅 plotly 有效）。
+        地图中心（纬度, 经度）。
 
     返回
     ----
-    plotly.graph_objects.Figure 或 plt.Figure
-        地图对象（类型取决于是否安装了 plotly）。
+    folium.Map 或 plt.Figure
+        地图对象（类型取决于是否安装了 folium）。
     """
     _validate_df_and_cols(df, [])
 
@@ -1378,68 +1468,16 @@ def plot_gis_map(
             "数据中没有可定位的采样点位（既无经度/纬度列，点位也不在内置坐标基准中）。"
         )
 
-    # --- 优先 plotly ---
+    # --- 优先 folium/Leaflet ---
     try:
-        import plotly.express as px  # noqa: F401
+        import folium  # noqa: F401
     except ImportError:
-        px = None
+        folium = None
 
-    if px is not None:
-        hover_cols = [
-            c for c in (
-                "水温", "DO", "pH", "浊度", "TN", "TP", "NH3-N", "CODMn",
-                "叶绿素a", "藻密度", "电导率", "GSM", "2-MIB",
-            ) if c in geo.columns and c != odor_col
-        ]
-        # 高德底图为 GCJ-02（火星坐标），点位与中心需由 WGS-84 偏移对齐，
-        # 否则点位会与底图错位数百米。
-        _gcj = [
-            _wgs84_to_gcj02(float(lon), float(lat))
-            for lon, lat in zip(geo["经度"], geo["纬度"])
-        ]
-        geo_gcj = geo.copy()
-        geo_gcj["经度"] = [g[0] for g in _gcj]
-        geo_gcj["纬度"] = [g[1] for g in _gcj]
-        _center_lon, _center_lat = _wgs84_to_gcj02(center[1], center[0])
+    if folium is not None:
+        return _plot_gis_map_folium(geo, odor_col, title, zoom, center)
 
-        fig = px.scatter_mapbox(
-            geo_gcj,
-            lat="纬度",
-            lon="经度",
-            color="风险等级",
-            color_discrete_map=_ODOR_LEVEL_COLORS,
-            size=odor_col,
-            size_max=40,
-            hover_name="采样点位",
-            hover_data={
-                "纬度": False,
-                "经度": False,
-                "风险等级": False,
-                **{c: ":.3f" for c in hover_cols},
-            },
-            zoom=zoom,
-            center={"lat": _center_lat, "lon": _center_lon},
-            mapbox_style="white-bg",
-            title=title,
-            category_orders={"风险等级": ["正常", "轻度超标", "严重超标", "未知"]},
-        )
-        # 用高德彩色简洁底图覆盖默认底图（国内直连，避免组员端底图空白）
-        fig.update_layout(mapbox=dict(style=_MAPBOX_AMAP_STYLE))
-        fig.update_layout(
-            margin={"r": 0, "t": 60, "l": 0, "b": 0},
-            legend=dict(
-                title="风险等级",
-                orientation="h",
-                yanchor="bottom",
-                y=1.02,
-                xanchor="right",
-                x=1,
-            ),
-            height=580,
-        )
-        return fig
-
-    # --- matplotlib 兜底 ---
+    # --- matplotlib 兜底（无底图） ---
     return _plot_gis_map_matplotlib(geo, odor_col, title)
 
 
@@ -1458,6 +1496,41 @@ def is_plotly_figure(fig) -> bool:
         若为 plotly 对象返回 True，否则 False。
     """
     return fig is not None and fig.__class__.__module__.startswith("plotly")
+
+
+def is_folium_map(fig) -> bool:
+    """
+    判断对象是否为 folium Map，用于选择 st.components.v1.html 渲染。
+
+    参数
+    ----
+    fig : object
+        待判断的对象。
+
+    返回
+    ----
+    bool
+        若为 folium Map 返回 True，否则 False。
+    """
+    return fig is not None and fig.__class__.__module__.startswith("folium")
+
+
+def folium_map_to_html(folium_map) -> str:
+    """
+    将 folium Map 导出为完整 HTML 字符串（含 Leaflet 与高德瓦片），
+    用于 st.components.v1.html 渲染或下载为交互式 HTML。
+
+    参数
+    ----
+    folium_map : folium.Map
+        待导出的地图。
+
+    返回
+    ----
+    str
+        完整可独立打开的 HTML 字符串。
+    """
+    return folium_map.get_root().render()
 
 
 # ============================================================================

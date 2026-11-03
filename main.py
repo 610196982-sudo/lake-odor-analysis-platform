@@ -75,6 +75,8 @@ from visualize import (
     plot_gis_map,
     plot_dual_axis,
     is_plotly_figure,
+    is_folium_map,
+    folium_map_to_html,
     save_figure,
     figure_to_fullscreen_html,
 )
@@ -1144,15 +1146,37 @@ def render_visualization_page() -> None:
             right_col=right_col,
         )
 
-    # --- 显示图表（plotly 与 matplotlib 分流） ---
+    # --- 显示图表（folium / plotly / matplotlib 三分流） ---
     if fig is not None:
-        if is_plotly_figure(fig):
+        if is_folium_map(fig):
+            st.components.v1.html(
+                folium_map_to_html(fig),
+                height=580,
+                scrolling=False,
+            )
+        elif is_plotly_figure(fig):
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.pyplot(fig)
 
-    # --- 图表导出（直接下载到浏览器：matplotlib → PNG，plotly → 交互式 HTML） ---
-    if fig is not None and not is_plotly_figure(fig):
+    # --- 图表导出（folium→HTML，matplotlib→PNG，plotly→交互式 HTML） ---
+    if fig is None:
+        pass
+    elif is_folium_map(fig):
+        st.download_button(
+            label="📥 下载地图（交互式 HTML）",
+            data=folium_map_to_html(fig),
+            file_name=f"{viz_type}.html",
+            mime="text/html",
+        )
+    elif is_plotly_figure(fig):
+        st.download_button(
+            label="📥 下载图表（交互式 HTML）",
+            data=figure_to_fullscreen_html(fig),
+            file_name=f"{viz_type}.html",
+            mime="text/html",
+        )
+    else:
         import io as _io
         _buf = _io.BytesIO()
         fig.savefig(_buf, format="png", dpi=300, bbox_inches="tight", facecolor="white")
@@ -1161,13 +1185,6 @@ def render_visualization_page() -> None:
             data=_buf.getvalue(),
             file_name=f"{viz_type}.png",
             mime="image/png",
-        )
-    elif fig is not None and is_plotly_figure(fig):
-        st.download_button(
-            label="📥 下载地图（交互式 HTML）",
-            data=figure_to_fullscreen_html(fig),
-            file_name=f"{viz_type}.html",
-            mime="text/html",
         )
 
 
