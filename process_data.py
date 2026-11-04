@@ -2104,34 +2104,6 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
             if col not in result.columns:
                 result[col] = float("nan")
 
-        # --- 自动推断监测时段 ---
-        if result["监测时段"].isna().all():
-            month_num = None
-            # 策略1：从段标签提取月份
-            if month_label:
-                m = re.search(r'(\d+)', month_label)
-                if m:
-                    month_num = int(m.group(1))
-            # 策略2：从文件名提取月份
-            if month_num is None:
-                for kw, mn in [("5月", 5), ("6月", 6), ("7月", 7), ("8月", 8),
-                                ("9月", 9), ("10月", 10), ("11月", 11),
-                                ("3月", 3), ("4月", 4)]:
-                    if kw in file_path:
-                        month_num = mn
-                        break
-            # 策略3：用当前月份
-            if month_num is None:
-                month_num = datetime.datetime.now().month
-
-            if 3 <= month_num <= 5:
-                period = "平水期（3-5月）"
-            elif 6 <= month_num <= 8:
-                period = "藻类生长期（6-8月）"
-            else:
-                period = "爆发期（9-11月）"
-            result["监测时段"] = period
-
         # --- 自动添加采样日期 ---
         if result["采样日期"].isna().all():
             if month_label:
@@ -2154,6 +2126,9 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
         raise ValueError("所有数据段处理后均为空，请检查数据内容。")
 
     result = pd.concat(all_results, ignore_index=True)
+
+    # --- 监测时段自适应划分：按数据实际采样月份动态切分为平水期/藻类生长期/爆发期 ---
+    result = assign_periods_by_month(result)
 
     # --- 重新排序列 ---
     preferred_order = [
@@ -2254,6 +2229,80 @@ def _extract_month_from_date(value) -> Optional[int]:
         if 1 <= month <= 12:
             return month
     return None
+
+
+def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    根据数据实际出现的采样月份，动态划分「平水期 / 藻类生长期 / 爆发期」。
+
+    背景
+    ----
+    早期实现把监测时段写死为固定日历区间：
+        平水期（3-5月）/ 藻类生长期（6-8月）/ 爆发期（9-11月）。
+    但当实测数据只覆盖 5/6/7 月时，这套区间会导致「爆发期」整根柱子缺失，
+    且 7 月藻华已爆发却仍被归入「藻类生长期」。本函数改为读取数据里真实存在的
+    月份，按时间先后均匀切分为三段，使三期划分与实测采样节奏对齐。
+
+    切分规则
+    --------
+    - 提取每行「采样日期」的月份，取不重复月份并升序排序。
+    - 将月份序列均分为三段，依次对应 平水期 / 藻类生长期 / 爆发期：
+      例如月份 [5, 6, 7] → 平水期（5月）/ 藻类生长期（6月）/ 爆发期（7月）；
+      月份 [5, 6, 7, 8, 9, 10] → 平水期（5-6月）/ 藻类生长期（7-8月）/ 爆发期（9-10月）。
+    - 仅覆盖能从日期解析出月份的行；无法解析的行保留「监测时段」列原值。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含「采样日期」列。
+
+    返回
+    ----
+    pd.DataFrame
+        重写「监测时段」列后的数据框副本（不修改入参）。
+    """
+    validate_dataframe(df)
+    result = df.copy()
+
+    if "采样日期" not in result.columns:
+        return result
+
+    # 提取每行采样月份
+    months = result["采样日期"].apply(_extract_month_from_date)
+
+    unique_months = sorted({int(m) for m in months.dropna() if m is not None})
+    if not unique_months:
+        return result
+
+    # 将月份序列动态切分为三段（首段=平水期，中段=藻类生长期，末段=爆发期）
+    n = len(unique_months)
+    period_names = ["平水期", "藻类生长期", "爆发期"]
+    month_to_name = {
+        m: period_names[min(2, i * 3 // n)]
+        for i, m in enumerate(unique_months)
+    }
+
+    # 生成每期的月份区间标签（如「平水期（5月）」「藻类生长期（6-7月）」）
+    seg_months: dict = {}
+    for m in unique_months:
+        seg_months.setdefault(month_to_name[m], []).append(m)
+    label_map: dict = {}
+    for name, ms in seg_months.items():
+        ms = sorted(ms)
+        rng = f"{ms[0]}月" if len(ms) == 1 else f"{ms[0]}-{ms[-1]}月"
+        label_map[name] = f"{name}（{rng}）"
+
+    def _map(m):
+        if m is None or pd.isna(m):
+            return None
+        return label_map[month_to_name[int(m)]]
+
+    mapped = months.apply(_map)
+
+    if "监测时段" not in result.columns:
+        result["监测时段"] = None
+    result.loc[mapped.notna(), "监测时段"] = mapped[mapped.notna()]
+    return result
 
 
 def fill_coordinates_from_baseline(df: pd.DataFrame) -> pd.DataFrame:
