@@ -63,6 +63,22 @@ DRIVER_COLUMNS: list = [
     "叶绿素a", "藻密度", "fDOM", "PC", "氧化还原电位", "TSS",
 ]
 
+# 真正参与数值计算的水质/生物指标列白名单（严格限制数值转换范围）。
+# 任何不在白名单内的列（时期、季节、点位、日期、湖泊、备注等文本列）
+# 绝不参与浮点数转换，保持字符串/分类原样，避免中文标签被强转 float64 报错。
+NUMERIC_COLUMNS: set = set([
+    "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn",
+    "叶绿素a", "叶绿素a_raw_mgL", "叶绿素a_送检", "GSM", "2-MIB",
+    "藻密度", "电导率", "氧化还原电位", "盐度", "TSS", "PC", "fDOM",
+    "fDOM_ppd", "DEP", "ALT", "DO饱和度", "DO饱和度RTB", "压力",
+]) | set(DRIVER_COLUMNS) | set(REASONABLE_RANGES)
+
+# 文本/标识类列名：保存的是分类标签、时间或名称，绝不参与数值转换。
+TEXT_COLUMNS: set = {
+    "湖泊名称", "采样点位", "监测时段", "采样日期", "采样时间",
+    "时期", "季节", "时段", "水文期", "点位名称", "站点名称", "备注", "说明",
+}
+
 
 def validate_dataframe(df: pd.DataFrame) -> bool:
     """
@@ -2027,9 +2043,10 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
             continue
 
         # --- 数值单元格统一解析：低于检出限（＜）、科学计数法、普通数值 ---
-        # 仅对数值型指标列进行解析，跳过文本列（采样点位、湖泊名称等）
-        _text_cols = {"采样点位", "湖泊名称", "监测时段", "采样日期", "经度", "纬度"}
-        _parse_cols = [c for c in result.columns if c not in _text_cols]
+        # 严格限制数值转换范围：只对水质指标数值列（白名单 NUMERIC_COLUMNS）
+        # 执行解析；文本列（采样点位、湖泊名称、监测时段、采样日期、时期等）
+        # 一律跳过，绝不把它们当作数值处理，避免中文标签被强转 float64 报错。
+        _parse_cols = [c for c in result.columns if c in NUMERIC_COLUMNS]
         for col in _parse_cols:
             result[col] = result[col].apply(_parse_numeric_cell)
 
@@ -2060,14 +2077,10 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
                 result["叶绿素a"] = pd.to_numeric(result["叶绿素a_送检"], errors="coerce")
             result = result.drop(columns=["叶绿素a_送检"], errors="ignore")
 
-        # --- 数据类型自动转换 ---
-        numeric_candidates = [
-            "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn",
-            "叶绿素a", "GSM", "2-MIB", "藻密度", "电导率", "氧化还原电位",
-            "盐度", "TSS", "PC", "fDOM", "fDOM_ppd", "DEP", "ALT",
-            "DO饱和度", "DO饱和度RTB", "压力",
-        ]
-        for col in numeric_candidates:
+        # --- 数据类型自动转换：仅对白名单数值列执行 ---
+        # 用 errors='coerce' 做容错：任何无法转成数字的残留文本都会被安全置为
+        # NaN，而不会抛出 ValueError 中断整个上传流程。
+        for col in NUMERIC_COLUMNS:
             if col in result.columns:
                 result[col] = pd.to_numeric(result[col], errors="coerce")
 
@@ -2095,12 +2108,17 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
             result["湖泊名称"] = lake_name
 
         # --- 补全缺失的必需字段 ---
-        required_cols: list = [
-            "湖泊名称", "采样点位", "监测时段", "采样日期",
+        # 文本/标识列补 None（保持 object 字符串类型），数值指标列才补 NaN。
+        # 否则「监测时段」等文本列会被建成 float64，后续写入中文字符串时崩。
+        text_required_cols: list = ["湖泊名称", "采样点位", "监测时段", "采样日期"]
+        numeric_required_cols: list = [
             "水温", "pH", "DO", "浊度", "TN", "TP", "NH3-N", "CODMn", "叶绿素a",
             "GSM", "2-MIB",
         ]
-        for col in required_cols:
+        for col in text_required_cols:
+            if col not in result.columns:
+                result[col] = None
+        for col in numeric_required_cols:
             if col not in result.columns:
                 result[col] = float("nan")
 
@@ -2301,7 +2319,10 @@ def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
 
     if "监测时段" not in result.columns:
         result["监测时段"] = None
-    result.loc[mapped.notna(), "监测时段"] = mapped[mapped.notna()]
+    # 确保「监测时段」为 object 字符串列（绝不保留为 float64），否则下面写入
+    # 中文字符串标签时会触发 "Invalid value ... for dtype 'float64'"。
+    result["监测时段"] = result["监测时段"].astype("object")
+    result.loc[mapped.notna(), "监测时段"] = mapped[mapped.notna()].astype(str)
     return result
 
 
