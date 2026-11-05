@@ -79,32 +79,13 @@ TEXT_COLUMNS: set = {
     "时期", "季节", "时段", "水文期", "点位名称", "站点名称", "备注", "说明",
 }
 
-# 科学监测时段（Season）定义（固定顺序，用于图表分组、配色与排序）。
-# 平水期（春夏季过渡）5-6 月；盛夏高发期（藻类生长期与爆发期合并）7-9 月；
-# 衰亡期（秋冬过渡期）10-11 月。
-SEASON_PERIODS: list = ["平水期", "盛夏高发期", "衰亡期"]
-
-
-def _month_to_season(month: int) -> str:
+def _month_to_label(month: int) -> str:
     """
-    将采样月份映射到科学监测时段（Season）。
+    将采样月份转换为月份标签（如 5 → "5月"）。
 
-    规则
-    ----
-    - 5-6 月   → 平水期（春夏季过渡）
-    - 7-9 月   → 盛夏高发期（气温最高、嗅味物质浓度大爆发）
-    - 10-11 月 → 衰亡期（气温下降、水体混合与衰亡沉降）
-    - 边界外就近归类：早春（3-4 月）→ 平水期；隆冬（12-2 月）→ 衰亡期
+    月份直接作为时间维度（不再划分「平水期/盛夏高发期/衰亡期」）。
     """
-    if 5 <= month <= 6:
-        return "平水期"
-    if 7 <= month <= 9:
-        return "盛夏高发期"
-    if 10 <= month <= 11:
-        return "衰亡期"
-    if month < 5:
-        return "平水期"
-    return "衰亡期"
+    return f"{int(month)}月"
 
 
 def validate_dataframe(df: pd.DataFrame) -> bool:
@@ -2172,7 +2153,7 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
     result = pd.concat(all_results, ignore_index=True)
 
-    # --- 监测时段自适应划分：按数据实际采样月份动态切分为平水期/藻类生长期/爆发期 ---
+    # --- 时间维度：按采样月份生成月份标签（如「5月」「6月」），不再划分监测时段 ---
     result = assign_periods_by_month(result)
 
     # --- 重新排序列 ---
@@ -2278,16 +2259,10 @@ def _extract_month_from_date(value) -> Optional[int]:
 
 def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
     """
-    按科学季节/时期重新归类监测时段（Season）。
+    按采样月份为每行生成月份标签（如「5月」「6月」），不再划分监测时段。
 
-    依据长三角湖库（太湖、淀山湖等）GSM/2-MIB 与蓝藻的实际发生规律，
-    将 5–11 月的数据映射为三大科学时期（不再死板地按单月切分）：
-      - 平水期（春夏季过渡）：5–6 月
-      - 盛夏高发期（藻类生长期与爆发期合并）：7–9 月（气温最高、嗅味大爆发）
-      - 衰亡期（秋冬过渡期）：10–11 月（气温下降、水体混合与衰亡沉降）
-    边界外月份就近归类：早春（3–4 月）归入平水期，隆冬（12–2 月）归入衰亡期。
-
-    仅覆盖能从日期解析出月份的行；无法解析的行保留「监测时段」列原值。
+    将「监测时段」列直接改写为月份标签，作为时间维度用于后续分组/作图。
+    仅覆盖能从「采样日期」解析出月份的行；无法解析的行保留原值。
 
     参数
     ----
@@ -2311,7 +2286,7 @@ def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
     def _map(m):
         if m is None or pd.isna(m):
             return None
-        return _month_to_season(int(m))
+        return _month_to_label(int(m))
 
     mapped = months.apply(_map)
 

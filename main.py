@@ -760,8 +760,7 @@ def render_data_import_page() -> None:
                     samples_per_period=samples_count,
                     random_seed=random_seed,
                 )
-                # 将模拟数据的「监测时段」统一重归类为科学时期
-                # （平水期 5-6 月 / 盛夏高发期 7-9 月 / 衰亡期 10-11 月）
+                # 将模拟数据的「监测时段」统一改写为月份标签（如「5月」「6月」）
                 df = assign_periods_by_month(df)
                 st.session_state["main_dataset"] = df
                 st.session_state["data_source"] = (
@@ -985,7 +984,7 @@ def render_visualization_page() -> None:
         )
     with col2:
         selected_periods = st.multiselect(
-            "选择监测时段",
+            "选择月份",
             options=df["监测时段"].unique().tolist() if "监测时段" in df.columns else [],
             default=df["监测时段"].unique().tolist() if "监测时段" in df.columns else [],
         )
@@ -1103,7 +1102,7 @@ def render_visualization_page() -> None:
             x_col=x_choice,
             y_col=y_variable,
             hue_col=hue_choice,
-            title=f"各{x_choice} {y_variable} 平均浓度对比",
+            title=f"各{x_choice} {y_variable} 浓度对比",
         )
 
     elif viz_type == "GIS 空间分布地图":

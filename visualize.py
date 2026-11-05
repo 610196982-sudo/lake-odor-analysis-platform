@@ -264,14 +264,7 @@ NATURE_PALETTE: list = [
     "#A69C8E",  # 暖灰
 ]
 
-# 三大科学时期 → 柔和学术配色（软蓝 / 砖红 / 墨绿），顺序与 SEASON_PERIODS 对应。
-SEASON_COLORS: dict = {
-    "平水期":   "#7A9CC6",   # 柔和钢蓝（春夏季过渡）
-    "盛夏高发期": "#C0715A",  # 柔和砖红（嗅味/蓝藻高发）
-    "衰亡期":   "#5E7D6E",   # 柔和墨绿（秋冬过渡）
-}
-
-# 柔和学术色板（补充用，降饱和、色盲友好；用于非时期的其它分组）
+# 柔和学术色板（降饱和、色盲友好；用于月份等分类分组）
 SOFT_PALETTE: list = [
     "#7A9CC6",  # 柔和钢蓝
     "#C0715A",  # 柔和砖红
@@ -1036,13 +1029,17 @@ def plot_multi_panel_dashboard(
 # 各湖泊指标对比柱状图
 # ============================================================================
 
-def _ordered_season_categories(categories) -> list:
-    """按固定科学时期顺序（平水期 → 盛夏高发期 → 衰亡期）排布类别，
-    其余类别按字符串升序追加到末尾。"""
-    cats = list(categories)
-    ordered = [c for c in SEASON_PERIODS if c in cats]
-    rest = sorted([c for c in cats if c not in SEASON_PERIODS], key=str)
-    return ordered + rest
+def _month_sort_key(label) -> tuple:
+    """按标签中的月份数字排序（「5月」→ 5）；无法解析的排到末尾。"""
+    digits = "".join(ch for ch in str(label) if ch.isdigit())
+    if digits:
+        return (0, int(digits))
+    return (1, 0)
+
+
+def _ordered_month_categories(categories) -> list:
+    """按月升序排列月份标签（5月 → 6月 → …），其它类别追加到末尾。"""
+    return sorted(categories, key=_month_sort_key)
 
 
 def plot_bar_comparison(
@@ -1050,15 +1047,16 @@ def plot_bar_comparison(
     x_col: str = "湖泊名称",
     y_col: str = "GSM",
     hue_col: Optional[str] = "监测时段",
-    agg_func: str = "mean",
-    title: str = "各湖泊嗅味物质（GSM）平均浓度对比",
+    agg_func: Optional[str] = None,
+    title: str = "各湖泊嗅味物质（GSM）浓度对比",
     figsize: Tuple[int, int] = (10, 6)
 ) -> plt.Figure:
     """
-    绘制 SCI 论文级分组柱状图，对比不同湖泊/时期的指标均值。
+    绘制 SCI 论文级柱状图：直接按月份/分类列出原始数值，默认不做聚合平均。
 
-    - X 轴 = 湖泊名称，柱子按三大科学时期（平水期/盛夏高发期/衰亡期）分组；
-    - 柔和学术配色（软蓝/砖红/墨绿），柱子带极细黑边（edgecolor=black）；
+    - X 轴 = 分类变量（如湖泊名称），分组（hue）按月份升序（5月 → 6月 → …）；
+    - 每个 (x, hue) 组内的多条记录（如不同采样点位）逐条绘制为相邻细柱，不聚合；
+    - 柔和学术配色，柱子带极细黑边（edgecolor=black）；
     - 封闭式黑色细边框（Box spine）+ 刻度线朝内；
     - 英文/数字使用 Times New Roman，中文使用无衬线 CJK 字体。
 
@@ -1071,9 +1069,9 @@ def plot_bar_comparison(
     y_col : str
         Y 轴数值变量。
     hue_col : Optional[str]
-        嵌套分组变量（默认「监测时段」）。
-    agg_func : str
-        聚合函数，默认 'mean'。
+        嵌套分组变量（默认「监测时段」，现为月份标签）。
+    agg_func : Optional[str]
+        传入聚合函数名（如 'mean'/'sum'）时按组聚合；None（默认）绘制原始值。
     title : str
         图表标题。
     figsize : Tuple[int, int]
@@ -1093,79 +1091,89 @@ def plot_bar_comparison(
     # --- 学术字体（英文/数字 Times New Roman，中文无衬线） ---
     _apply_sci_font()
 
-    # --- 聚合数据 ---
-    group_cols = [x_col] + ([hue_col] if hue_col is not None else [])
-    agg_df = df.groupby(group_cols, as_index=False)[y_col].agg(agg_func)
-
-    # --- 创建图表 ---
     fig, ax = plt.subplots(figsize=figsize)
 
-    if hue_col is not None:
-        # X 轴分类按数据首次出现顺序（保留「太湖-平台山」等业务顺序），
-        # 分组（hue）按科学时期固定顺序排布。
-        x_categories = list(pd.unique(df[x_col].dropna()))
-        hue_categories = _ordered_season_categories(agg_df[hue_col].unique())
+    # 去掉分组/数值缺失的行，避免绘制 NaN
+    keep_cols = [x_col, y_col] + ([hue_col] if hue_col is not None else [])
+    plot_df = df.dropna(subset=keep_cols)
+
+    if agg_func:
+        # --- 兼容旧行为：按组聚合 ---
+        group_cols = [x_col] + ([hue_col] if hue_col is not None else [])
+        agg_df = plot_df.groupby(group_cols, as_index=False)[y_col].agg(agg_func)
+        x_categories = list(pd.unique(agg_df[x_col]))
+        hue_categories = (
+            _ordered_month_categories(pd.unique(agg_df[hue_col]))
+            if hue_col is not None else []
+        )
         n_x = len(x_categories)
-        n_hue = len(hue_categories)
+        n_hue = len(hue_categories) if hue_col is not None else 1
         bar_width = 0.8 / n_hue
-
-        lookup = agg_df.set_index([x_col, hue_col])[y_col].to_dict()
-
+        lookup = (
+            agg_df.set_index(group_cols)[y_col].to_dict()
+            if hue_col is not None else {}
+        )
         for idx, hue_cat in enumerate(hue_categories):
             positions = np.arange(n_x) + (idx - (n_hue - 1) / 2) * bar_width
-            heights = [lookup.get((x_cat, hue_cat), 0.0) for x_cat in x_categories]
-            color = SEASON_COLORS.get(hue_cat, SOFT_PALETTE[idx % len(SOFT_PALETTE)])
+            heights = [lookup.get((xc, hue_cat), 0.0) for xc in x_categories]
             ax.bar(
-                positions,
-                heights,
-                width=bar_width,
-                color=color,
-                label=str(hue_cat),
-                edgecolor="black",
-                linewidth=0.5,
-                zorder=3,
+                positions, heights, width=bar_width,
+                color=SOFT_PALETTE[idx % len(SOFT_PALETTE)],
+                label=str(hue_cat), edgecolor="black", linewidth=0.5, zorder=3,
             )
-
         ax.set_xticks(np.arange(n_x))
         ax.set_xticklabels(x_categories, rotation=30, ha="right")
-        ax.legend(
-            title=hue_col,
-            fontsize=8,
-            title_fontsize=9,
-            frameon=True,
-            framealpha=1.0,
-            edgecolor="black",
-        )
+        if hue_col is not None:
+            ax.legend(title=hue_col, fontsize=8, title_fontsize=9,
+                      frameon=True, framealpha=1.0, edgecolor="black")
+    elif hue_col is not None:
+        # --- 原始值（不聚合）：每个 (x, hue) 组内逐条绘制相邻细柱 ---
+        x_categories = list(pd.unique(plot_df[x_col]))
+        hue_categories = _ordered_month_categories(pd.unique(plot_df[hue_col]))
+        n_x = len(x_categories)
+        n_hue = len(hue_categories)
+        slot_width = 0.8 / n_hue
+        grouped = plot_df.groupby([x_col, hue_col], dropna=True)
+        for h_i, hue_cat in enumerate(hue_categories):
+            color = SOFT_PALETTE[h_i % len(SOFT_PALETTE)]
+            first = True
+            for x_i, x_cat in enumerate(x_categories):
+                if (x_cat, hue_cat) not in grouped.groups:
+                    continue
+                vals = grouped.get_group((x_cat, hue_cat))[y_col].tolist()
+                n = len(vals)
+                sub_width = slot_width / n
+                center = x_i + (h_i - (n_hue - 1) / 2) * slot_width
+                for k, v in enumerate(vals):
+                    pos = center + (k - (n - 1) / 2) * sub_width
+                    ax.bar(pos, v, width=sub_width, color=color,
+                           edgecolor="black", linewidth=0.5, zorder=3,
+                           label=str(hue_cat) if first else None)
+                    first = False
+        ax.set_xticks(np.arange(n_x))
+        ax.set_xticklabels(x_categories, rotation=30, ha="right")
+        ax.legend(title=hue_col, fontsize=8, title_fontsize=9,
+                  frameon=True, framealpha=1.0, edgecolor="black")
     else:
-        # 简单柱状图（无分组）
-        x_categories = list(pd.unique(df[x_col].dropna()))
-        colors = [
-            SEASON_COLORS.get(c, SOFT_PALETTE[i % len(SOFT_PALETTE)])
-            for i, c in enumerate(x_categories)
-        ]
-        heights = [
-            agg_df.loc[agg_df[x_col] == c, y_col].values[0] for c in x_categories
-        ]
-        ax.bar(
-            x_categories,
-            heights,
-            color=colors,
-            edgecolor="black",
-            linewidth=0.5,
-            zorder=3,
-        )
-        ax.tick_params(axis="x", rotation=30)
-
-        # 无分组时在柱顶标注数值
-        for i, val in enumerate(heights):
-            ax.text(
-                i, val,
-                f"{val:.2f}",
-                ha="center",
-                va="bottom",
-                fontsize=8,
-                fontweight="bold",
+        # --- 原始值（不聚合、无分组） ---
+        x_categories = list(pd.unique(plot_df[x_col]))
+        n_x = len(x_categories)
+        slot_width = 0.8
+        grouped = plot_df.groupby(x_col, dropna=True)
+        for x_i, x_cat in enumerate(x_categories):
+            vals = (
+                grouped.get_group(x_cat)[y_col].tolist()
+                if x_cat in grouped.groups else []
             )
+            n = len(vals)
+            sub_width = slot_width / n if n else slot_width
+            for k, v in enumerate(vals):
+                pos = x_i + (k - (n - 1) / 2) * sub_width
+                ax.bar(pos, v, width=sub_width,
+                       color=SOFT_PALETTE[x_i % len(SOFT_PALETTE)],
+                       edgecolor="black", linewidth=0.5, zorder=3)
+        ax.set_xticks(np.arange(n_x))
+        ax.set_xticklabels(x_categories, rotation=30, ha="right")
 
     # --- SCI 样式：封闭黑框 + 刻度朝内 + 标签 ---
     _style_sci_axes(ax)
@@ -1183,7 +1191,7 @@ def plot_bar_comparison(
 # ============================================================================
 
 # 基准坐标表统一从 process_data 引入（单一数据源，避免重复维护）
-from process_data import POINT_COORDS, SEASON_PERIODS  # noqa: E402
+from process_data import POINT_COORDS  # noqa: E402
 
 # 嗅味浓度分级阈值（ng/L）
 _ODOR_LIGHT: float = 10.0
