@@ -1784,6 +1784,11 @@ def main() -> None:
             """,
             unsafe_allow_html=True,
         )
+        st.markdown(
+            '<p style="font-size:11px;color:#0e7490;margin:-6px 0 8px 0;">'
+            '版本 v0.4 · 按月列出（不聚合平均）</p>',
+            unsafe_allow_html=True,
+        )
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
 
         # 导航菜单
