@@ -79,6 +79,33 @@ TEXT_COLUMNS: set = {
     "时期", "季节", "时段", "水文期", "点位名称", "站点名称", "备注", "说明",
 }
 
+# 科学监测时段（Season）定义（固定顺序，用于图表分组、配色与排序）。
+# 平水期（春夏季过渡）5-6 月；盛夏高发期（藻类生长期与爆发期合并）7-9 月；
+# 衰亡期（秋冬过渡期）10-11 月。
+SEASON_PERIODS: list = ["平水期", "盛夏高发期", "衰亡期"]
+
+
+def _month_to_season(month: int) -> str:
+    """
+    将采样月份映射到科学监测时段（Season）。
+
+    规则
+    ----
+    - 5-6 月   → 平水期（春夏季过渡）
+    - 7-9 月   → 盛夏高发期（气温最高、嗅味物质浓度大爆发）
+    - 10-11 月 → 衰亡期（气温下降、水体混合与衰亡沉降）
+    - 边界外就近归类：早春（3-4 月）→ 平水期；隆冬（12-2 月）→ 衰亡期
+    """
+    if 5 <= month <= 6:
+        return "平水期"
+    if 7 <= month <= 9:
+        return "盛夏高发期"
+    if 10 <= month <= 11:
+        return "衰亡期"
+    if month < 5:
+        return "平水期"
+    return "衰亡期"
+
 
 def validate_dataframe(df: pd.DataFrame) -> bool:
     """
@@ -2251,23 +2278,16 @@ def _extract_month_from_date(value) -> Optional[int]:
 
 def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
     """
-    根据数据实际出现的采样月份，动态划分「平水期 / 藻类生长期 / 爆发期」。
+    按科学季节/时期重新归类监测时段（Season）。
 
-    背景
-    ----
-    早期实现把监测时段写死为固定日历区间：
-        平水期（3-5月）/ 藻类生长期（6-8月）/ 爆发期（9-11月）。
-    但当实测数据只覆盖 5/6/7 月时，这套区间会导致「爆发期」整根柱子缺失，
-    且 7 月藻华已爆发却仍被归入「藻类生长期」。本函数改为读取数据里真实存在的
-    月份，按时间先后均匀切分为三段，使三期划分与实测采样节奏对齐。
+    依据长三角湖库（太湖、淀山湖等）GSM/2-MIB 与蓝藻的实际发生规律，
+    将 5–11 月的数据映射为三大科学时期（不再死板地按单月切分）：
+      - 平水期（春夏季过渡）：5–6 月
+      - 盛夏高发期（藻类生长期与爆发期合并）：7–9 月（气温最高、嗅味大爆发）
+      - 衰亡期（秋冬过渡期）：10–11 月（气温下降、水体混合与衰亡沉降）
+    边界外月份就近归类：早春（3–4 月）归入平水期，隆冬（12–2 月）归入衰亡期。
 
-    切分规则
-    --------
-    - 提取每行「采样日期」的月份，取不重复月份并升序排序。
-    - 将月份序列均分为三段，依次对应 平水期 / 藻类生长期 / 爆发期：
-      例如月份 [5, 6, 7] → 平水期（5月）/ 藻类生长期（6月）/ 爆发期（7月）；
-      月份 [5, 6, 7, 8, 9, 10] → 平水期（5-6月）/ 藻类生长期（7-8月）/ 爆发期（9-10月）。
-    - 仅覆盖能从日期解析出月份的行；无法解析的行保留「监测时段」列原值。
+    仅覆盖能从日期解析出月份的行；无法解析的行保留「监测时段」列原值。
 
     参数
     ----
@@ -2288,32 +2308,10 @@ def assign_periods_by_month(df: pd.DataFrame) -> pd.DataFrame:
     # 提取每行采样月份
     months = result["采样日期"].apply(_extract_month_from_date)
 
-    unique_months = sorted({int(m) for m in months.dropna() if m is not None})
-    if not unique_months:
-        return result
-
-    # 将月份序列动态切分为三段（首段=平水期，中段=藻类生长期，末段=爆发期）
-    n = len(unique_months)
-    period_names = ["平水期", "藻类生长期", "爆发期"]
-    month_to_name = {
-        m: period_names[min(2, i * 3 // n)]
-        for i, m in enumerate(unique_months)
-    }
-
-    # 生成每期的月份区间标签（如「平水期（5月）」「藻类生长期（6-7月）」）
-    seg_months: dict = {}
-    for m in unique_months:
-        seg_months.setdefault(month_to_name[m], []).append(m)
-    label_map: dict = {}
-    for name, ms in seg_months.items():
-        ms = sorted(ms)
-        rng = f"{ms[0]}月" if len(ms) == 1 else f"{ms[0]}-{ms[-1]}月"
-        label_map[name] = f"{name}（{rng}）"
-
     def _map(m):
         if m is None or pd.isna(m):
             return None
-        return label_map[month_to_name[int(m)]]
+        return _month_to_season(int(m))
 
     mapped = months.apply(_map)
 

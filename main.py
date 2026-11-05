@@ -63,6 +63,7 @@ from process_data import (
     aggregate_by_group,
     normalize_columns,
     smart_import,
+    assign_periods_by_month,
     DRIVER_COLUMNS,
 )
 from visualize import (
@@ -759,6 +760,9 @@ def render_data_import_page() -> None:
                     samples_per_period=samples_count,
                     random_seed=random_seed,
                 )
+                # 将模拟数据的「监测时段」统一重归类为科学时期
+                # （平水期 5-6 月 / 盛夏高发期 7-9 月 / 衰亡期 10-11 月）
+                df = assign_periods_by_month(df)
                 st.session_state["main_dataset"] = df
                 st.session_state["data_source"] = (
                     f"内置模拟数据（{samples_count} 条/点位/监测时段，种子={random_seed}）"

@@ -264,6 +264,25 @@ NATURE_PALETTE: list = [
     "#A69C8E",  # 暖灰
 ]
 
+# 三大科学时期 → 柔和学术配色（软蓝 / 砖红 / 墨绿），顺序与 SEASON_PERIODS 对应。
+SEASON_COLORS: dict = {
+    "平水期":   "#7A9CC6",   # 柔和钢蓝（春夏季过渡）
+    "盛夏高发期": "#C0715A",  # 柔和砖红（嗅味/蓝藻高发）
+    "衰亡期":   "#5E7D6E",   # 柔和墨绿（秋冬过渡）
+}
+
+# 柔和学术色板（补充用，降饱和、色盲友好；用于非时期的其它分组）
+SOFT_PALETTE: list = [
+    "#7A9CC6",  # 柔和钢蓝
+    "#C0715A",  # 柔和砖红
+    "#5E7D6E",  # 柔和墨绿
+    "#8A9BB8",  # 石板蓝
+    "#C99A6E",  # 柔和杏橙
+    "#9AA7B8",  # 雾蓝灰
+    "#6FA88C",  # 鼠尾草绿
+    "#B86E6E",  # 降饱和玫红
+]
+
 def _apply_chinese_font() -> None:
     """重新应用中文字体与学术字号（防止被 seaborn 风格覆盖导致中文方框）。"""
     plt.rcParams["font.family"] = "sans-serif"
@@ -280,6 +299,46 @@ def _apply_chinese_font() -> None:
     plt.rcParams["legend.fontsize"] = 8
     plt.rcParams["xtick.labelsize"] = 8
     plt.rcParams["ytick.labelsize"] = 8
+
+
+def _apply_sci_font() -> None:
+    """学术排版字体：英文/数字用 Times New Roman，中文用无衬线 CJK 字体。
+
+    依赖 matplotlib >= 3.6 的字体逐字形回退（font.family 支持列表，按顺序为每个
+    字形查找可用字体）。旧版本或云端（无 Times New Roman）自动回退到 CJK 字体，
+    保证中文不显示为方框。
+    """
+    latin_stack = ["Times New Roman", "STIXGeneral", "Liberation Serif", "DejaVu Serif"]
+    cjk_stack = (
+        ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
+        + _CJK_FONT_STACK
+        + ["sans-serif"]
+    )
+    try:
+        ver = matplotlib.__version__.split(".")
+        major = int(ver[0])
+        minor = int(ver[1]) if len(ver) > 1 else 0
+        if major > 3 or (major == 3 and minor >= 6):
+            plt.rcParams["font.family"] = latin_stack + cjk_stack
+        else:
+            plt.rcParams["font.family"] = "sans-serif"
+            plt.rcParams["font.sans-serif"] = cjk_stack
+    except Exception:
+        plt.rcParams["font.family"] = "sans-serif"
+        plt.rcParams["font.sans-serif"] = cjk_stack
+    plt.rcParams["axes.unicode_minus"] = False
+
+
+def _style_sci_axes(ax) -> None:
+    """SCI 论文级坐标轴样式：封闭式黑色细边框（Box spine）+ 刻度线朝内。"""
+    for spine in ax.spines.values():
+        spine.set_visible(True)
+        spine.set_color("black")
+        spine.set_linewidth(0.8)
+    ax.tick_params(
+        direction="in", top=True, right=True, bottom=True, left=True,
+        length=3.5, width=0.8, colors="black",
+    )
 
 
 @functools.lru_cache(maxsize=1)
@@ -977,6 +1036,15 @@ def plot_multi_panel_dashboard(
 # 各湖泊指标对比柱状图
 # ============================================================================
 
+def _ordered_season_categories(categories) -> list:
+    """按固定科学时期顺序（平水期 → 盛夏高发期 → 衰亡期）排布类别，
+    其余类别按字符串升序追加到末尾。"""
+    cats = list(categories)
+    ordered = [c for c in SEASON_PERIODS if c in cats]
+    rest = sorted([c for c in cats if c not in SEASON_PERIODS], key=str)
+    return ordered + rest
+
+
 def plot_bar_comparison(
     df: pd.DataFrame,
     x_col: str = "湖泊名称",
@@ -987,7 +1055,12 @@ def plot_bar_comparison(
     figsize: Tuple[int, int] = (10, 6)
 ) -> plt.Figure:
     """
-    绘制分组柱状图，直观对比不同湖泊/时期/点位的指标均值。
+    绘制 SCI 论文级分组柱状图，对比不同湖泊/时期的指标均值。
+
+    - X 轴 = 湖泊名称，柱子按三大科学时期（平水期/盛夏高发期/衰亡期）分组；
+    - 柔和学术配色（软蓝/砖红/墨绿），柱子带极细黑边（edgecolor=black）；
+    - 封闭式黑色细边框（Box spine）+ 刻度线朝内；
+    - 英文/数字使用 Times New Roman，中文使用无衬线 CJK 字体。
 
     参数
     ----
@@ -998,7 +1071,7 @@ def plot_bar_comparison(
     y_col : str
         Y 轴数值变量。
     hue_col : Optional[str]
-        嵌套分组变量。
+        嵌套分组变量（默认「监测时段」）。
     agg_func : str
         聚合函数，默认 'mean'。
     title : str
@@ -1017,74 +1090,74 @@ def plot_bar_comparison(
         raise ValueError(f"hue_col '{hue_col}' 在数据中不存在。")
     _validate_custom_params(title, x_col, y_col)
 
+    # --- 学术字体（英文/数字 Times New Roman，中文无衬线） ---
+    _apply_sci_font()
+
     # --- 聚合数据 ---
-    agg_cols = [x_col, y_col]
-    if hue_col is not None:
-        agg_cols.append(hue_col)
-    group_cols = [c for c in agg_cols if c != y_col]
+    group_cols = [x_col] + ([hue_col] if hue_col is not None else [])
     agg_df = df.groupby(group_cols, as_index=False)[y_col].agg(agg_func)
 
     # --- 创建图表 ---
     fig, ax = plt.subplots(figsize=figsize)
 
     if hue_col is not None:
-        # 分组柱状图
-        x_categories = agg_df[x_col].unique()
-        hue_categories = agg_df[hue_col].unique()
+        # X 轴分类按数据首次出现顺序（保留「太湖-平台山」等业务顺序），
+        # 分组（hue）按科学时期固定顺序排布。
+        x_categories = list(pd.unique(df[x_col].dropna()))
+        hue_categories = _ordered_season_categories(agg_df[hue_col].unique())
         n_x = len(x_categories)
         n_hue = len(hue_categories)
         bar_width = 0.8 / n_hue
 
+        lookup = agg_df.set_index([x_col, hue_col])[y_col].to_dict()
+
         for idx, hue_cat in enumerate(hue_categories):
-            subset = agg_df[agg_df[hue_col] == hue_cat]
-            # 对齐到正确的 X 位置
             positions = np.arange(n_x) + (idx - (n_hue - 1) / 2) * bar_width
-            heights = []
-            for x_cat in x_categories:
-                row = subset[subset[x_col] == x_cat]
-                if not row.empty:
-                    heights.append(row[y_col].values[0])
-                else:
-                    heights.append(0)
-            color = NATURE_PALETTE[idx % len(NATURE_PALETTE)]
+            heights = [lookup.get((x_cat, hue_cat), 0.0) for x_cat in x_categories]
+            color = SEASON_COLORS.get(hue_cat, SOFT_PALETTE[idx % len(SOFT_PALETTE)])
             ax.bar(
                 positions,
                 heights,
                 width=bar_width,
                 color=color,
                 label=str(hue_cat),
-                alpha=0.85,
-                edgecolor="white",
+                edgecolor="black",
                 linewidth=0.5,
+                zorder=3,
             )
 
         ax.set_xticks(np.arange(n_x))
-        ax.set_xticklabels(x_categories, rotation=30, ha="right", fontsize=9)
+        ax.set_xticklabels(x_categories, rotation=30, ha="right")
         ax.legend(
             title=hue_col,
             fontsize=8,
             title_fontsize=9,
             frameon=True,
+            framealpha=1.0,
+            edgecolor="black",
         )
     else:
-        # 简单柱状图
+        # 简单柱状图（无分组）
+        x_categories = list(pd.unique(df[x_col].dropna()))
         colors = [
-            NATURE_PALETTE[i % len(NATURE_PALETTE)]
-            for i in range(len(agg_df))
+            SEASON_COLORS.get(c, SOFT_PALETTE[i % len(SOFT_PALETTE)])
+            for i, c in enumerate(x_categories)
+        ]
+        heights = [
+            agg_df.loc[agg_df[x_col] == c, y_col].values[0] for c in x_categories
         ]
         ax.bar(
-            agg_df[x_col],
-            agg_df[y_col],
+            x_categories,
+            heights,
             color=colors,
-            alpha=0.85,
-            edgecolor="white",
+            edgecolor="black",
             linewidth=0.5,
+            zorder=3,
         )
-        ax.tick_params(axis="x", rotation=30, labelsize=9)
+        ax.tick_params(axis="x", rotation=30)
 
-    # --- 添加数值标签 ---
-    if hue_col is None:
-        for i, val in enumerate(agg_df[y_col]):
+        # 无分组时在柱顶标注数值
+        for i, val in enumerate(heights):
             ax.text(
                 i, val,
                 f"{val:.2f}",
@@ -1094,11 +1167,12 @@ def plot_bar_comparison(
                 fontweight="bold",
             )
 
-    # --- 标签和标题 ---
-    ax.set_xlabel(x_col, fontsize=12, fontweight="medium")
-    ax.set_ylabel(y_col, fontsize=12, fontweight="medium")
-    ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
-    ax.grid(True, alpha=0.3, axis="y", linestyle="--")
+    # --- SCI 样式：封闭黑框 + 刻度朝内 + 标签 ---
+    _style_sci_axes(ax)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    ax.set_title(title, pad=12)
+    ax.grid(True, alpha=0.25, axis="y", linestyle="--", zorder=0)
 
     fig.tight_layout()
     return fig
@@ -1109,7 +1183,7 @@ def plot_bar_comparison(
 # ============================================================================
 
 # 基准坐标表统一从 process_data 引入（单一数据源，避免重复维护）
-from process_data import POINT_COORDS  # noqa: E402
+from process_data import POINT_COORDS, SEASON_PERIODS  # noqa: E402
 
 # 嗅味浓度分级阈值（ng/L）
 _ODOR_LIGHT: float = 10.0
