@@ -231,50 +231,39 @@ plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 150
 plt.rcParams["savefig.dpi"] = 300
 plt.rcParams["savefig.bbox"] = "tight"
-plt.rcParams["font.size"] = 9
-plt.rcParams["axes.titlesize"] = 12
-plt.rcParams["axes.labelsize"] = 10
-plt.rcParams["legend.fontsize"] = 8
-plt.rcParams["xtick.labelsize"] = 8
-plt.rcParams["ytick.labelsize"] = 8
-plt.rcParams["axes.linewidth"] = 0.8
-plt.rcParams["xtick.major.width"] = 0.6
-plt.rcParams["ytick.major.width"] = 0.6
+plt.rcParams["font.size"] = 10
+plt.rcParams["axes.titlesize"] = 13
+plt.rcParams["axes.labelsize"] = 11.5
+plt.rcParams["legend.fontsize"] = 9
+plt.rcParams["xtick.labelsize"] = 10
+plt.rcParams["ytick.labelsize"] = 10
+plt.rcParams["axes.linewidth"] = 1.0
+plt.rcParams["xtick.major.width"] = 0.8
+plt.rcParams["ytick.major.width"] = 0.8
 plt.rcParams["xtick.major.size"] = 3.5
 plt.rcParams["ytick.major.size"] = 3.5
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
-plt.rcParams["grid.alpha"] = 0.25
-plt.rcParams["grid.linewidth"] = 0.4
+plt.rcParams["grid.alpha"] = 0.3
+plt.rcParams["grid.linewidth"] = 0.5
 plt.rcParams["figure.facecolor"] = "white"
-plt.rcParams["axes.facecolor"] = "#fcfcfc"
+plt.rcParams["axes.facecolor"] = "white"
 
 # --- 学术配色方案 ---
-# Nature Reviews 风格：柔和、高区分度、色盲友好
+# ColorBrewer Set2：柔和、低饱和、高区分度、色盲友好（环境科学 SCI 常用）
 NATURE_PALETTE: list = [
-    "#CC5542",  # 暖砖红
-    "#3E8EBA",  # 钴蓝
-    "#55A87C",  # 森林绿
-    "#4A5F82",  # 石板蓝
-    "#E8916A",  # 暖杏橙
-    "#7A8EAE",  # 雾蓝灰
-    "#6FB89B",  # 鼠尾草绿
-    "#B8464A",  # 暗玫红
-    "#8B7355",  # 可可棕
-    "#A69C8E",  # 暖灰
+    "#66c2a5",  # 浅青绿
+    "#fc8d62",  # 浅橙
+    "#8da0cb",  # 浅蓝
+    "#e78ac3",  # 浅粉
+    "#a6d854",  # 浅黄绿
+    "#ffd92f",  # 浅金黄
+    "#e5c494",  # 浅棕
+    "#b3b3b3",  # 浅灰
 ]
 
-# 柔和学术色板（降饱和、色盲友好；用于月份等分类分组）
-SOFT_PALETTE: list = [
-    "#7A9CC6",  # 柔和钢蓝
-    "#C0715A",  # 柔和砖红
-    "#5E7D6E",  # 柔和墨绿
-    "#8A9BB8",  # 石板蓝
-    "#C99A6E",  # 柔和杏橙
-    "#9AA7B8",  # 雾蓝灰
-    "#6FA88C",  # 鼠尾草绿
-    "#B86E6E",  # 降饱和玫红
-]
+# 分类分组色板（与 NATURE_PALETTE 一致，保证全站配色统一）
+SOFT_PALETTE: list = NATURE_PALETTE
 
 def _apply_chinese_font() -> None:
     """重新应用中文字体与学术字号（防止被 seaborn 风格覆盖导致中文方框）。"""
@@ -295,15 +284,17 @@ def _apply_chinese_font() -> None:
 
 
 def _apply_sci_font() -> None:
-    """学术排版字体：英文/数字用 Times New Roman，中文用无衬线 CJK 字体。
+    """全局 SCI 排版字体：英文/数字 Times New Roman，中文 SimSun（宋体）。
 
     依赖 matplotlib >= 3.6 的字体逐字形回退（font.family 支持列表，按顺序为每个
-    字形查找可用字体）。旧版本或云端（无 Times New Roman）自动回退到 CJK 字体，
-    保证中文不显示为方框。
+    字形查找可用字体）。本地 Windows 命中 Times New Roman + SimSun；云端 Linux
+    无这两款字体时按回退链优雅降级，保证中文不显示为方框。同时统一出版级字号：
+    坐标轴标题 11.5pt、刻度 10pt、图例 9pt。
     """
     latin_stack = ["Times New Roman", "STIXGeneral", "Liberation Serif", "DejaVu Serif"]
     cjk_stack = (
-        ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
+        ["SimSun", "宋体"]
+        + ([AVAILABLE_FONT] if AVAILABLE_FONT and AVAILABLE_FONT != "sans-serif" else [])
         + _CJK_FONT_STACK
         + ["sans-serif"]
     )
@@ -320,18 +311,38 @@ def _apply_sci_font() -> None:
         plt.rcParams["font.family"] = "sans-serif"
         plt.rcParams["font.sans-serif"] = cjk_stack
     plt.rcParams["axes.unicode_minus"] = False
+    # 出版级字号统一
+    plt.rcParams["font.size"] = 10
+    plt.rcParams["axes.titlesize"] = 13
+    plt.rcParams["axes.labelsize"] = 11.5
+    plt.rcParams["legend.fontsize"] = 9
+    plt.rcParams["xtick.labelsize"] = 10
+    plt.rcParams["ytick.labelsize"] = 10
 
 
-def _style_sci_axes(ax) -> None:
-    """SCI 论文级坐标轴样式：封闭式黑色细边框（Box spine）+ 刻度线朝内。"""
+def _style_sci_axes(ax, grid=False) -> None:
+    """SCI 论文级坐标轴样式：四边封闭黑框（Box spine，lw=1.0）+ 刻度朝内 + 去网格。
+
+    参数
+    ----
+    ax : matplotlib.axes.Axes
+        目标坐标轴。
+    grid : bool 或 str
+        默认 False 彻底去网格；True 保留极细浅灰虚线网格（横纵）；"y" 仅保留横向网格。
+    """
     for spine in ax.spines.values():
         spine.set_visible(True)
         spine.set_color("black")
-        spine.set_linewidth(0.8)
+        spine.set_linewidth(1.0)
     ax.tick_params(
         direction="in", top=True, right=True, bottom=True, left=True,
-        length=3.5, width=0.8, colors="black",
+        length=3.5, width=1.0,
     )
+    if grid:
+        axis = grid if isinstance(grid, str) else "both"
+        ax.grid(True, axis=axis, color="#cccccc", linestyle="--", alpha=0.3, linewidth=0.5)
+    else:
+        ax.grid(False)
 
 
 @functools.lru_cache(maxsize=1)
@@ -339,19 +350,19 @@ def _seaborn():
     """惰性加载 seaborn 并应用学术风格，延迟到首次绘制 seaborn 图时执行。
 
     seaborn 依赖 scipy，且 sns.set_style 会重置中文字体；这里在设置风格后
-    立即调用 _apply_chinese_font() 恢复中文字体，避免中文显示为方框。
+    立即调用 _apply_sci_font() 恢复出版级字体（Times New Roman + SimSun），避免中文方框。
     惰性导入可显著缩短 Streamlit Cloud 冷启动（唤醒）时间。
     """
     import seaborn as sns
     sns.set_style("ticks")
     sns.set_palette(sns.color_palette(NATURE_PALETTE))
     sns.set_context("paper", font_scale=1.0)
-    _apply_chinese_font()
+    _apply_sci_font()
     return sns
 
 
-# 模块导入时即应用中文字体，保证非 seaborn 图表（matplotlib 直绘）中文正常
-_apply_chinese_font()
+# 模块导入时即应用出版级字体（Times New Roman + SimSun），保证非 seaborn 图表中文正常
+_apply_sci_font()
 
 
 # ============================================================================
@@ -499,8 +510,8 @@ def plot_temporal_trend(
         title_fontsize=10,
     )
 
-    # --- 设置网格 ---
-    ax.grid(True, alpha=0.3, linestyle="--")
+    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细浅灰虚线网格 ---
+    _style_sci_axes(ax, grid=True)
 
     # --- 紧凑布局 ---
     fig.tight_layout()
@@ -623,8 +634,8 @@ def plot_boxplot_comparison(
             title_fontsize=9,
         )
 
-    # --- 网格 ---
-    ax.grid(True, alpha=0.3, axis="y", linestyle="--")
+    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细横向网格 ---
+    _style_sci_axes(ax, grid="y")
 
     fig.tight_layout()
     return fig
@@ -641,7 +652,7 @@ def plot_correlation_heatmap(
     title: str = "各理化指标与嗅味物质相关性热力图",
     figsize: Tuple[int, int] = (10, 8),
     annot: bool = True,
-    cmap: str = "RdBu_r"
+    cmap: str = "coolwarm"
 ) -> plt.Figure:
     """
     绘制数值指标之间的相关性系数热力图。
@@ -869,16 +880,16 @@ def plot_scatter_with_regression(
         ax.legend(
             loc="best",
             frameon=True,
-            fontsize=8,
+            fontsize=9,
             title=hue_col,
-            title_fontsize=9,
+            title_fontsize=10,
             markerscale=1.5,
         )
     elif add_regression and hue_col is None:
         ax.legend(loc="best", fontsize=9)
 
-    # --- 网格 ---
-    ax.grid(True, alpha=0.3, linestyle="--")
+    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细浅灰虚线网格 ---
+    _style_sci_axes(ax, grid=True)
 
     fig.tight_layout()
     return fig
@@ -945,6 +956,7 @@ def plot_multi_panel_dashboard(
         n_rows, n_cols,
         figsize=figsize,
         squeeze=False,
+        gridspec_kw={"wspace": 0.35, "hspace": 0.45},
     )
 
     # --- 为每个预测变量绘制子图 ---
@@ -996,7 +1008,7 @@ def plot_multi_panel_dashboard(
                     0.05, 0.95,
                     f"R² = {r_squared:.3f}",
                     transform=ax.transAxes,
-                    fontsize=9,
+                    fontsize=10,
                     verticalalignment="top",
                     bbox={
                         "boxstyle": "round,pad=0.3",
@@ -1008,9 +1020,9 @@ def plot_multi_panel_dashboard(
                 # 数据退化（如常数列/奇异矩阵），跳过回归线，仅保留散点
                 pass
 
-        ax.set_xlabel(pred_col, fontsize=9)
-        ax.set_ylabel(target_col, fontsize=9)
-        ax.grid(True, alpha=0.3, linestyle="--")
+        ax.set_xlabel(pred_col, fontsize=10)
+        ax.set_ylabel(target_col, fontsize=10)
+        _style_sci_axes(ax, grid=True)
 
     # --- 隐藏多余的空子图 ---
     for idx in range(n_predictors, n_rows * n_cols):
@@ -1175,12 +1187,11 @@ def plot_bar_comparison(
         ax.set_xticks(np.arange(n_x))
         ax.set_xticklabels(x_categories, rotation=30, ha="right")
 
-    # --- SCI 样式：封闭黑框 + 刻度朝内 + 标签 ---
-    _style_sci_axes(ax)
+    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细横向网格 + 标签 ---
+    _style_sci_axes(ax, grid="y")
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.set_title(title, pad=12)
-    ax.grid(True, alpha=0.25, axis="y", linestyle="--", zorder=0)
 
     fig.tight_layout()
     return fig
@@ -1404,7 +1415,7 @@ def _plot_gis_map_matplotlib(
     ax.set_ylabel("纬度（°N）", fontsize=12, fontweight="medium")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.legend(title="风险等级", fontsize=9, title_fontsize=10, frameon=True)
-    ax.grid(True, alpha=0.3, linestyle="--")
+    _style_sci_axes(ax, grid=True)
     fig.tight_layout()
     return fig
 
@@ -1740,7 +1751,8 @@ def plot_dual_axis(
     ax1.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=9)
 
     ax1.set_title(title, fontsize=14, fontweight="bold", pad=15)
-    ax1.grid(True, alpha=0.3, linestyle="--")
+    _style_sci_axes(ax1, grid=True)
+    _style_sci_axes(ax2, grid=False)
     fig.tight_layout()
     return fig
 
