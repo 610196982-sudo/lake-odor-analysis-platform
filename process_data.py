@@ -63,6 +63,10 @@ DRIVER_COLUMNS: list = [
     "叶绿素a", "藻密度", "fDOM", "PC", "氧化还原电位", "TSS",
 ]
 
+# 8 月台风缺测插值的湖库白名单：太湖（3 点）、南湖、淀山湖因代采样/台风整段缺测，
+# 用 7月↔9月 中点插值补全；玄武湖、长荡湖、潜明水库为自采实测，保持真值不插值。
+AUGUST_INTERP_LAKES: set = {"太湖", "南湖", "淀山湖"}
+
 # 真正参与数值计算的水质/生物指标列白名单（严格限制数值转换范围）。
 # 任何不在白名单内的列（时期、季节、点位、日期、湖泊、备注等文本列）
 # 绝不参与浮点数转换，保持字符串/分类原样，避免中文标签被强转 float64 报错。
@@ -1439,6 +1443,11 @@ def _parse_below_detection(value) -> Optional[float]:
         # 返回检出限的一半（MDL/2 替代法）
         return round(detection_limit / 2.0, 4)
 
+    # 带 "L"/"U" 报告限标记的实测值（如 "0.02L"），按数值本身计，非缺失
+    m = re.match(r'([+-]?\d+(?:\.\d+)?)\s*[LlUu]\s*$', s)
+    if m:
+        return float(m.group(1))
+
     # 尝试直接转数值
     try:
         return float(s)
@@ -1905,18 +1914,16 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
 
             print(f"  [信息] 检测到多段式数据结构：发现 {n_sections} 个段表头标记。")
 
-            # 构建段边界：每个段从 header_row 开始，到下一个 header_row 或空行或末尾结束
+            # 构建段边界：每个段从 header_row 开始，到下一个 header_row 或末尾结束。
+            # 注意：不要用空行截断段落——某月「点位名存在但整行数值空白」的缺测行
+            # （如 8 月太湖 3 点因台风整行缺测）会被误判为空行，导致整个月份段落被丢弃。
+            # 这类空白行随后会由「过滤全空行」步骤按关键字段是否全空统一剔除。
             for hi, hdr_idx in enumerate(header_row_indices):
-                # 确定该段的结束位置
-                end_row = len(raw_df)
-                # 下一个段表头
+                # 确定该段的结束位置：以下一个段表头为界
                 if hi + 1 < len(header_row_indices):
-                    end_row = min(end_row, header_row_indices[hi + 1])
-                # 下一个空行（但至少要有1行数据）
-                for ei in empty_row_indices:
-                    if ei > hdr_idx and ei < end_row:
-                        end_row = ei
-                        break
+                    end_row = header_row_indices[hi + 1]
+                else:
+                    end_row = len(raw_df)
 
                 if hdr_idx == 0:
                     # 第一个段：表头已经在 raw_df.columns 中
@@ -2156,6 +2163,13 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     # --- 时间维度：按采样月份生成月份标签（如「5月」「6月」），不再划分监测时段 ---
     result = assign_periods_by_month(result)
 
+    # --- 10 月为待检测（整月嗅味物质未出结果），不参与分析，直接剔除 ---
+    if "监测时段" in result.columns:
+        _before_drop = len(result)
+        result = result[result["监测时段"].astype(str).str.strip() != "10月"].copy()
+        if len(result) < _before_drop:
+            print(f"  [信息] 已剔除 10 月待检测数据（{_before_drop - len(result)} 条），不参与分析。")
+
     # --- 重新排序列 ---
     preferred_order = [
         "湖泊名称", "采样点位", "监测时段", "采样日期",
@@ -2178,8 +2192,8 @@ def smart_import(file_path: str, lake_name: str = "太湖") -> pd.DataFrame:
     # --- 参考表坐标纠偏：纠正点位坐标填错（漂移超阈值）的情况 ---
     result = _snap_coordinates_to_reference(result)
 
-    # --- 时间插值：填补漏测的理化指标（如 7 月漏测用 5/6 月趋势外推）---
-    result = interpolate_missing_temporal(result)
+    # --- 8 月台风缺测插值：仅太湖/南湖/淀山湖用 7月↔9月 中点填补，其余保持真值 ---
+    result = interpolate_august_midpoint(result)
 
     # =========================================================================
     # 汇总报告
@@ -2528,6 +2542,90 @@ def interpolate_missing_temporal(
     if n_filled:
         print(f"  [信息] 时间插值：已填补 {n_filled} 个缺失值（方法：{method}）。")
 
+    return result
+
+
+def interpolate_august_midpoint(
+    df: pd.DataFrame,
+    august_label: str = "8月",
+    interp_lakes: Optional[set] = None,
+) -> pd.DataFrame:
+    """
+    8 月台风缺测插值：仅对指定湖库、同一点位在 7 月与 9 月均有观测时，
+    用两邻月中点填补 8 月缺失值（绝不外推，也绝不改动其它月份的真值）。
+
+    方法（与 outputs/Odorants_2026_v2 的口径一致）：
+    - GSM 及常规环境因子：线性内插，8月 = (7月 + 9月) / 2；
+    - 2-MIB：log10 线性内插，8月 = 10^[(log10 7月 + log10 9月) / 2]；
+    - 仅当 7 月与 9 月都有非空观测时才插值；
+    - 8 月已有实测值的点位（玄武湖、长荡湖、潜明水库）不在白名单内，保持真值。
+
+    参数
+    ----
+    df : pd.DataFrame
+        标准化数据集，需含「湖泊名称」「采样点位」「监测时段」及数值指标列。
+    august_label : str
+        8 月的监测时段标签，默认 "8月"。
+    interp_lakes : Optional[set]
+        需要插值的湖库集合，默认 AUGUST_INTERP_LAKES（太湖/南湖/淀山湖）。
+
+    返回
+    ----
+    pd.DataFrame
+        填补后的数据框（返回副本，不修改入参）。
+    """
+    import re as _re
+
+    if not {"湖泊名称", "采样点位", "监测时段"}.issubset(df.columns):
+        return df
+    if interp_lakes is None:
+        interp_lakes = AUGUST_INTERP_LAKES
+
+    result = df.copy()
+
+    def _month_of(label) -> Optional[int]:
+        m = _re.search(r'(\d{1,2})\s*月', str(label))
+        return int(m.group(1)) if m else None
+
+    month: pd.Series = result["监测时段"].apply(_month_of)
+
+    # 插值列：仅水质/嗅味数值列，排除坐标等非浓度字段
+    interp_cols = [
+        c for c in result.columns
+        if c in NUMERIC_COLUMNS and c not in ("经度", "纬度")
+    ]
+
+    n_filled = 0
+    for site, grp in result.groupby("采样点位"):
+        lake = grp["湖泊名称"].iloc[0]
+        if lake not in interp_lakes:
+            continue
+        grp_month = month[grp.index]
+        aug = grp[grp_month == 8]
+        jul = grp[grp_month == 7]
+        sep = grp[grp_month == 9]
+        if aug.empty or jul.empty or sep.empty:
+            continue
+        aug_idx = aug.index[0]
+        jul_row = jul.iloc[0]
+        sep_row = sep.iloc[0]
+        for col in interp_cols:
+            if pd.notna(result.at[aug_idx, col]):
+                continue
+            v7 = jul_row[col]
+            v9 = sep_row[col]
+            if pd.isna(v7) or pd.isna(v9):
+                continue
+            if col == "2-MIB" and float(v7) > 0 and float(v9) > 0:
+                est = float(10 ** ((np.log10(float(v7)) + np.log10(float(v9))) / 2))
+            else:
+                est = float((float(v7) + float(v9)) / 2)
+            result.at[aug_idx, col] = est
+            n_filled += 1
+
+    if n_filled:
+        print(f"  [信息] 8月插值：已填补 {n_filled} 个缺失值"
+              f"（7月↔9月中点，湖库={sorted(interp_lakes)}）。")
     return result
 
 

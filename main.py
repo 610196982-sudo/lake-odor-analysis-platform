@@ -1097,12 +1097,19 @@ def render_visualization_page() -> None:
             options=["监测时段", "湖泊名称"],
             index=1 if x_choice == "湖泊名称" else 0,
         )
+        agg_choice = st.radio(
+            "统计方式",
+            ["均值 ± 标准差（推荐）", "原始值逐点"],
+            horizontal=True,
+        )
         fig = plot_bar_comparison(
             filtered_df,
             x_col=x_choice,
             y_col=y_variable,
             hue_col=hue_choice,
-            title=f"各{x_choice} {y_variable} 浓度对比",
+            agg_func="mean" if "均值" in agg_choice else None,
+            title=f"各{x_choice} {y_variable} 浓度对比"
+                  f"{'（均值±SD）' if '均值' in agg_choice else '（原始值）'}",
         )
 
     elif viz_type == "GIS 空间分布地图":
@@ -1786,7 +1793,7 @@ def main() -> None:
         )
         st.markdown(
             '<p style="font-size:11px;color:#0e7490;margin:-6px 0 8px 0;">'
-            '版本 v0.4 · 按月列出（不聚合平均）</p>',
+            '版本 v0.5 · 真值+8月插值 · 清新图表</p>',
             unsafe_allow_html=True,
         )
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)

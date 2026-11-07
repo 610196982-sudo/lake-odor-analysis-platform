@@ -226,7 +226,7 @@ def _setup_chinese_font() -> str:
 
 AVAILABLE_FONT: str = _setup_chinese_font()
 
-# --- 全局 matplotlib 参数设置（学术期刊风格）---
+# --- 全局 matplotlib 参数设置（清新轻量风格）---
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 150
 plt.rcParams["savefig.dpi"] = 300
@@ -237,29 +237,30 @@ plt.rcParams["axes.labelsize"] = 11.5
 plt.rcParams["legend.fontsize"] = 9
 plt.rcParams["xtick.labelsize"] = 10
 plt.rcParams["ytick.labelsize"] = 10
-plt.rcParams["axes.linewidth"] = 1.0
+plt.rcParams["axes.linewidth"] = 0.9
+plt.rcParams["axes.edgecolor"] = "#b6b6b6"
 plt.rcParams["xtick.major.width"] = 0.8
 plt.rcParams["ytick.major.width"] = 0.8
-plt.rcParams["xtick.major.size"] = 3.5
-plt.rcParams["ytick.major.size"] = 3.5
-plt.rcParams["xtick.direction"] = "in"
-plt.rcParams["ytick.direction"] = "in"
-plt.rcParams["grid.alpha"] = 0.3
+plt.rcParams["xtick.major.size"] = 3.0
+plt.rcParams["ytick.major.size"] = 3.0
+plt.rcParams["xtick.direction"] = "out"
+plt.rcParams["ytick.direction"] = "out"
+plt.rcParams["grid.alpha"] = 0.5
 plt.rcParams["grid.linewidth"] = 0.5
 plt.rcParams["figure.facecolor"] = "white"
 plt.rcParams["axes.facecolor"] = "white"
 
-# --- 学术配色方案 ---
-# ColorBrewer Set2：柔和、低饱和、高区分度、色盲友好（环境科学 SCI 常用）
+# --- 清新配色方案 ---
+# 清爽、明亮、低沉重感：适合水质/环境数据，且与平台青绿主题协调
 NATURE_PALETTE: list = [
-    "#66c2a5",  # 浅青绿
-    "#fc8d62",  # 浅橙
-    "#8da0cb",  # 浅蓝
-    "#e78ac3",  # 浅粉
-    "#a6d854",  # 浅黄绿
-    "#ffd92f",  # 浅金黄
-    "#e5c494",  # 浅棕
-    "#b3b3b3",  # 浅灰
+    "#45B8AC",  # 清新青绿
+    "#FFA657",  # 清新暖橙
+    "#5B9BD5",  # 清新天蓝
+    "#F27EA9",  # 清新柔粉
+    "#8CC152",  # 清新草绿
+    "#A88BC4",  # 清新柔紫
+    "#F7CE68",  # 清新明黄
+    "#7FB3C8",  # 清新灰蓝
 ]
 
 # 分类分组色板（与 NATURE_PALETTE 一致，保证全站配色统一）
@@ -321,26 +322,29 @@ def _apply_sci_font() -> None:
 
 
 def _style_sci_axes(ax, grid=False) -> None:
-    """SCI 论文级坐标轴样式：四边封闭黑框（Box spine，lw=1.0）+ 刻度朝内 + 去网格。
+    """清新轻量坐标轴样式：去掉顶/右黑框（despine），仅保留左/下浅灰轴线，刻度朝外。
 
     参数
     ----
     ax : matplotlib.axes.Axes
         目标坐标轴。
     grid : bool 或 str
-        默认 False 彻底去网格；True 保留极细浅灰虚线网格（横纵）；"y" 仅保留横向网格。
+        默认 False 彻底去网格；True 保留极细浅灰网格（横纵）；"y" 仅保留横向网格。
     """
-    for spine in ax.spines.values():
-        spine.set_visible(True)
-        spine.set_color("black")
-        spine.set_linewidth(1.0)
+    for name, spine in ax.spines.items():
+        if name in ("top", "right"):
+            spine.set_visible(False)
+        else:
+            spine.set_visible(True)
+            spine.set_color("#b6b6b6")
+            spine.set_linewidth(0.9)
     ax.tick_params(
-        direction="in", top=True, right=True, bottom=True, left=True,
-        length=3.5, width=1.0,
+        direction="out", top=False, right=False, bottom=True, left=True,
+        length=3.0, width=0.8, colors="#555555",
     )
     if grid:
         axis = grid if isinstance(grid, str) else "both"
-        ax.grid(True, axis=axis, color="#cccccc", linestyle="--", alpha=0.3, linewidth=0.5)
+        ax.grid(True, axis=axis, color="#e2e2e2", linestyle="-", alpha=0.7, linewidth=0.6)
     else:
         ax.grid(False)
 
@@ -510,8 +514,8 @@ def plot_temporal_trend(
         title_fontsize=10,
     )
 
-    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细浅灰虚线网格 ---
-    _style_sci_axes(ax, grid=True)
+    # --- 清新样式：去黑框 + 浅灰轴线 + 刻度朝外 ---
+    _style_sci_axes(ax, grid=False)
 
     # --- 紧凑布局 ---
     fig.tight_layout()
@@ -634,8 +638,8 @@ def plot_boxplot_comparison(
             title_fontsize=9,
         )
 
-    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细横向网格 ---
-    _style_sci_axes(ax, grid="y")
+    # --- 清新样式：去黑框 + 浅灰轴线 + 刻度朝外 ---
+    _style_sci_axes(ax, grid=False)
 
     fig.tight_layout()
     return fig
@@ -888,8 +892,8 @@ def plot_scatter_with_regression(
     elif add_regression and hue_col is None:
         ax.legend(loc="best", fontsize=9)
 
-    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细浅灰虚线网格 ---
-    _style_sci_axes(ax, grid=True)
+    # --- 清新样式：去黑框 + 浅灰轴线 + 刻度朝外 ---
+    _style_sci_axes(ax, grid=False)
 
     fig.tight_layout()
     return fig
@@ -1022,7 +1026,7 @@ def plot_multi_panel_dashboard(
 
         ax.set_xlabel(pred_col, fontsize=10)
         ax.set_ylabel(target_col, fontsize=10)
-        _style_sci_axes(ax, grid=True)
+        _style_sci_axes(ax, grid=False)
 
     # --- 隐藏多余的空子图 ---
     for idx in range(n_predictors, n_rows * n_cols):
@@ -1064,12 +1068,12 @@ def plot_bar_comparison(
     figsize: Tuple[int, int] = (10, 6)
 ) -> plt.Figure:
     """
-    绘制 SCI 论文级柱状图：直接按月份/分类列出原始数值，默认不做聚合平均。
+    绘制清新轻量柱状图：直接按月份/分类列出原始数值，默认不做聚合平均。
 
     - X 轴 = 分类变量（如湖泊名称），分组（hue）按月份升序（5月 → 6月 → …）；
     - 每个 (x, hue) 组内的多条记录（如不同采样点位）逐条绘制为相邻细柱，不聚合；
-    - 柔和学术配色，柱子带极细黑边（edgecolor=black）；
-    - 封闭式黑色细边框（Box spine）+ 刻度线朝内；
+    - 清新配色，柱子无黑边框；
+    - 去顶/右黑框、浅灰轴线（despine）+ 刻度朝外；
     - 英文/数字使用 Times New Roman，中文使用无衬线 CJK 字体。
 
     参数
@@ -1110,9 +1114,17 @@ def plot_bar_comparison(
     plot_df = df.dropna(subset=keep_cols)
 
     if agg_func:
-        # --- 兼容旧行为：按组聚合 ---
+        # --- 按组聚合；mean 时叠加 ±1 SD 误差棒（太湖等多断面湖泊的空间异质性）---
         group_cols = [x_col] + ([hue_col] if hue_col is not None else [])
-        agg_df = plot_df.groupby(group_cols, as_index=False)[y_col].agg(agg_func)
+        if str(agg_func).lower() in ("mean", "平均值", "均值"):
+            g = plot_df.groupby(group_cols)[y_col]
+            agg_df = pd.DataFrame({
+                "mean": g.mean(), "std": g.std(ddof=1), "count": g.count(),
+            }).reset_index()
+            use_errorbar = True
+        else:
+            agg_df = plot_df.groupby(group_cols, as_index=False)[y_col].agg(agg_func)
+            use_errorbar = False
         x_categories = list(pd.unique(agg_df[x_col]))
         hue_categories = (
             _ordered_month_categories(pd.unique(agg_df[hue_col]))
@@ -1121,23 +1133,44 @@ def plot_bar_comparison(
         n_x = len(x_categories)
         n_hue = len(hue_categories) if hue_col is not None else 1
         bar_width = 0.8 / n_hue
-        lookup = (
-            agg_df.set_index(group_cols)[y_col].to_dict()
-            if hue_col is not None else {}
-        )
+
+        def _group_row(xc, hc):
+            mask = agg_df[x_col] == xc
+            if hue_col is not None:
+                mask = mask & (agg_df[hue_col] == hc)
+            sub = agg_df[mask]
+            return sub.iloc[0] if not sub.empty else None
+
         for idx, hue_cat in enumerate(hue_categories):
             positions = np.arange(n_x) + (idx - (n_hue - 1) / 2) * bar_width
-            heights = [lookup.get((xc, hue_cat), 0.0) for xc in x_categories]
+            heights: list = []
+            errors: list = []
+            for xc in x_categories:
+                row = _group_row(xc, hue_cat)
+                if row is None:
+                    heights.append(np.nan)
+                    errors.append(0.0)
+                    continue
+                heights.append(float(row["mean"] if use_errorbar else row[y_col]))
+                if (use_errorbar and row["count"] > 1
+                        and pd.notna(row["std"]) and row["std"] > 0):
+                    errors.append(float(row["std"]))
+                else:
+                    errors.append(0.0)
             ax.bar(
                 positions, heights, width=bar_width,
                 color=SOFT_PALETTE[idx % len(SOFT_PALETTE)],
-                label=str(hue_cat), edgecolor="black", linewidth=0.5, zorder=3,
+                label=str(hue_cat), edgecolor="none", zorder=3,
             )
+            if use_errorbar:
+                for pos, h, err in zip(positions, heights, errors):
+                    if pd.notna(h) and err > 0:
+                        ax.errorbar(pos, h, yerr=err, fmt="none", ecolor="0.15",
+                                    elinewidth=0.8, capsize=2.5, capthick=0.8, zorder=4)
         ax.set_xticks(np.arange(n_x))
         ax.set_xticklabels(x_categories, rotation=30, ha="right")
         if hue_col is not None:
-            ax.legend(title=hue_col, fontsize=8, title_fontsize=9,
-                      frameon=True, framealpha=1.0, edgecolor="black")
+            ax.legend(title=hue_col, fontsize=8, title_fontsize=9, frameon=False)
     elif hue_col is not None:
         # --- 原始值（不聚合）：每个 (x, hue) 组内逐条绘制相邻细柱 ---
         x_categories = list(pd.unique(plot_df[x_col]))
@@ -1159,13 +1192,12 @@ def plot_bar_comparison(
                 for k, v in enumerate(vals):
                     pos = center + (k - (n - 1) / 2) * sub_width
                     ax.bar(pos, v, width=sub_width, color=color,
-                           edgecolor="black", linewidth=0.5, zorder=3,
+                           edgecolor="none", zorder=3,
                            label=str(hue_cat) if first else None)
                     first = False
         ax.set_xticks(np.arange(n_x))
         ax.set_xticklabels(x_categories, rotation=30, ha="right")
-        ax.legend(title=hue_col, fontsize=8, title_fontsize=9,
-                  frameon=True, framealpha=1.0, edgecolor="black")
+        ax.legend(title=hue_col, fontsize=8, title_fontsize=9, frameon=False)
     else:
         # --- 原始值（不聚合、无分组） ---
         x_categories = list(pd.unique(plot_df[x_col]))
@@ -1183,12 +1215,12 @@ def plot_bar_comparison(
                 pos = x_i + (k - (n - 1) / 2) * sub_width
                 ax.bar(pos, v, width=sub_width,
                        color=SOFT_PALETTE[x_i % len(SOFT_PALETTE)],
-                       edgecolor="black", linewidth=0.5, zorder=3)
+                       edgecolor="none", zorder=3)
         ax.set_xticks(np.arange(n_x))
         ax.set_xticklabels(x_categories, rotation=30, ha="right")
 
-    # --- SCI 样式：封闭黑框 + 刻度朝内 + 极细横向网格 + 标签 ---
-    _style_sci_axes(ax, grid="y")
+    # --- 清新样式：去黑框 + 浅灰轴线 + 刻度朝外 + 标签 ---
+    _style_sci_axes(ax, grid=False)
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
     ax.set_title(title, pad=12)
@@ -1415,7 +1447,7 @@ def _plot_gis_map_matplotlib(
     ax.set_ylabel("纬度（°N）", fontsize=12, fontweight="medium")
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.legend(title="风险等级", fontsize=9, title_fontsize=10, frameon=True)
-    _style_sci_axes(ax, grid=True)
+    _style_sci_axes(ax, grid=False)
     fig.tight_layout()
     return fig
 
@@ -1751,7 +1783,7 @@ def plot_dual_axis(
     ax1.legend(lines1 + lines2, labels1 + labels2, loc="best", fontsize=9)
 
     ax1.set_title(title, fontsize=14, fontweight="bold", pad=15)
-    _style_sci_axes(ax1, grid=True)
+    _style_sci_axes(ax1, grid=False)
     _style_sci_axes(ax2, grid=False)
     fig.tight_layout()
     return fig
